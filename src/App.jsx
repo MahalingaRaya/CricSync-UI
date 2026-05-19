@@ -18,9 +18,14 @@ export default function App() {
           targetTeam: 'Bengaluru Smashers'
         })
       });
-      if (response.ok) setAppliedPlayer(true);
+      if (response.ok) {
+        setAppliedPlayer(true);
+        alert("✅ SUCCESS! Your player profile was just saved to the live Aiven Database!");
+      } else {
+        alert("⚠️ Something went wrong with the data format.");
+      }
     } catch (error) {
-      console.error("Backend offline", error);
+      alert("⏳ The Render backend is currently waking up from sleep mode! Wait about 45 seconds and tap it again.");
     } finally {
       setLoading(false);
     }
@@ -38,24 +43,33 @@ export default function App() {
           experienceYears: 5
         })
       });
-      if (response.ok) setAppliedUmpire(true);
+      if (response.ok) {
+        setAppliedUmpire(true);
+        alert("✅ SUCCESS! You are officially registered as an umpire in the cloud database!");
+      } else {
+        alert("⚠️ Something went wrong with the data format.");
+      }
     } catch (error) {
-      console.error("Backend offline", error);
+      alert("⏳ The Render backend is currently waking up from sleep mode! Wait about 45 seconds and tap it again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleComingSoon = (feature) => {
+    alert(`🚀 The ${feature} feature is being built next!`);
+  };
+
   return (
     <div style={{ backgroundColor: '#0b0f19', color: '#f3f4f6', minHeight: '100vh', fontFamily: 'sans-serif', paddingBottom: '40px' }}>
       
-      {/* STICKY TRANSPARENT NAVBAR */}
+      {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, backdropFilter: 'blur(12px)', backgroundColor: 'rgba(11, 15, 25, 0.8)', borderBottom: '1px solid #1f2937', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50 }}>
-        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', letterSpacing: '2px', color: '#10b981' }}>CRICSYNC<span style={{color:'#fff'}}>.</span></div>
+        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', letterSpacing: '2px', color: '#10b981', cursor: 'pointer' }} onClick={() => handleComingSoon('Home Dashboard')}>CRICSYNC<span style={{color:'#fff'}}>.</span></div>
         <div style={{ display: 'flex', gap: '20px', fontSize: '0.9rem', fontWeight: '500' }}>
-          <span style={{ color: '#9ca3af' }}>Matches</span>
-          <span style={{ color: '#9ca3af' }}>Tournaments</span>
-          <span style={{ color: '#10b981' }}>Hiring</span>
+          <span style={{ color: '#9ca3af', cursor: 'pointer' }} onClick={() => handleComingSoon('Matches List')}>Matches</span>
+          <span style={{ color: '#9ca3af', cursor: 'pointer' }} onClick={() => handleComingSoon('Tournaments')}>Tournaments</span>
+          <span style={{ color: '#10b981', cursor: 'pointer' }} onClick={() => handleComingSoon('Hiring Board')}>Hiring</span>
         </div>
       </nav>
 
@@ -69,7 +83,7 @@ export default function App() {
         </p>
       </div>
 
-      {/* PREMIUM LIVE MATCH CARD */}
+      {/* MATCH CARD */}
       <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '12px', maxWidth: '360px', margin: '-20px auto 40px auto', overflow: 'hidden', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)', position: 'relative', zIndex: 10 }}>
         <div style={{ background: 'linear-gradient(90deg, #ef4444 0%, #3b82f6 100%)', padding: '6px 15px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
           <span>Live Tracking</span>
@@ -98,13 +112,13 @@ export default function App() {
             onClick={handlePlayerApply}
             disabled={loading || appliedPlayer}
             style={{ backgroundColor: appliedPlayer ? '#065f46' : '#1f2937', color: appliedPlayer ? '#10b981' : '#fff', width: '100%', border: '1px solid #374151', padding: '12px', borderRadius: '8px', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer' }}>
-            {loading ? 'Processing...' : appliedPlayer ? '✓ Spot Application Sent' : 'Apply for Player Spot'}
+            {loading ? 'Processing Cloud...' : appliedPlayer ? '✓ Spot Application Sent' : 'Apply for Player Spot'}
           </button>
           <button 
             onClick={handleUmpireRegister}
             disabled={loading || appliedUmpire}
             style={{ backgroundColor: appliedUmpire ? '#065f46' : 'transparent', color: appliedUmpire ? '#10b981' : '#fff', width: '100%', border: '1px solid #10b981', padding: '12px', borderRadius: '8px', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer' }}>
-            {loading ? 'Processing...' : appliedUmpire ? '✓ Registered as Official' : 'Register as Umpire'}
+            {loading ? 'Processing Cloud...' : appliedUmpire ? '✓ Registered as Official' : 'Register as Umpire'}
           </button>
         </div>
       </div>
@@ -120,7 +134,7 @@ export default function App() {
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1f2937', paddingTop: '12px', marginTop: '12px' }}>
             <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>₹3,000<span style={{ fontSize:'0.75rem', color:'#9ca3af', fontWeight:'400' }}> / day</span></div>
-            <button style={{ backgroundColor: '#10b981', color: '#0b0f19', border: 'none', padding: '8px 14px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700' }}>Apply Now</button>
+            <button onClick={() => handleComingSoon('Job Application')} style={{ backgroundColor: '#10b981', color: '#0b0f19', border: 'none', padding: '8px 14px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>Apply Now</button>
           </div>
         </div>
       </div>
