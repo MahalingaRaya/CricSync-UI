@@ -4,6 +4,7 @@ import { Navigation } from './Navigation';
 import { Dashboard } from './Dashboard';
 import { Ecosystem } from './Ecosystem';
 import { Profile } from './Profile';
+import { LiveEngine } from './LiveEngine';
 
 export default function App() {
   return (
@@ -13,8 +14,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/tournaments" element={<Ecosystem />} />
         <Route path="/profile" element={<Profile />} />
-        {/* Placeholder for the Live Engine route */}
-        <Route path="/live" element={<div className="p-8 text-center text-zinc-500 font-bold">Live Engine Coming Soon...</div>} />
+        <Route path="/live" element={<LiveEngine />} />
       </Routes>
     </BrowserRouter>
   );
