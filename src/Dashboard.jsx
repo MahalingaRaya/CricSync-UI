@@ -3,9 +3,10 @@ import { Activity, Shield, Target, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Dashboard = () => {
+  // THE FIX: These paths now perfectly connect your end-to-end flow
   const modules = [
     { title: "Live Engine", icon: <Target className="text-purple-400" />, desc: "Scorer Module", path: "/live" },
-    { title: "League Ops", icon: <Shield className="text-blue-400" />, desc: "Tournaments", path: "/tournaments" },
+    { title: "League Ops", icon: <Shield className="text-blue-400" />, desc: "Tournaments", path: "/organizer" },
     { title: "Talent Pool", icon: <Users className="text-amber-400" />, desc: "Player Identity", path: "/profile" },
     { title: "Hiring Hub", icon: <Activity className="text-pink-400" />, desc: "Recruit Staff", path: "/tournaments" },
   ];
@@ -56,7 +57,7 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Ecosystem Grid - NOW CLICKABLE */}
+      {/* Ecosystem Grid - NOW FULLY WIRED */}
       <div>
         <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-1 mb-4">Core Ecosystem</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
