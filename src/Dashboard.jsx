@@ -1,7 +1,15 @@
 import React from 'react';
 import { Activity, Shield, Target, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Dashboard = () => {
+  const modules = [
+    { title: "Live Engine", icon: <Target className="text-purple-400" />, desc: "Scorer Module", path: "/live" },
+    { title: "League Ops", icon: <Shield className="text-blue-400" />, desc: "Tournaments", path: "/tournaments" },
+    { title: "Talent Pool", icon: <Users className="text-amber-400" />, desc: "Player Identity", path: "/profile" },
+    { title: "Hiring Hub", icon: <Activity className="text-pink-400" />, desc: "Recruit Staff", path: "/tournaments" },
+  ];
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 mb-20 md:mb-0">
       
@@ -48,21 +56,16 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Ecosystem Grid */}
+      {/* Ecosystem Grid - NOW CLICKABLE */}
       <div>
         <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-1 mb-4">Core Ecosystem</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { title: "Live Engine", icon: <Target className="text-purple-400" />, desc: "Scorer Module" },
-            { title: "League Ops", icon: <Shield className="text-blue-400" />, desc: "Tournaments" },
-            { title: "Talent Pool", icon: <Users className="text-amber-400" />, desc: "Player Stats" },
-            { title: "Hiring Hub", icon: <Activity className="text-pink-400" />, desc: "Recruit Staff" },
-          ].map((mod, i) => (
-            <div key={i} className="bg-zinc-900/40 border border-zinc-800/50 p-5 rounded-3xl hover:bg-zinc-800 transition cursor-pointer">
+          {modules.map((mod, i) => (
+            <Link to={mod.path} key={i} className="bg-zinc-900/40 border border-zinc-800/50 p-5 rounded-3xl hover:bg-zinc-800 transition cursor-pointer block">
               <div className="mb-4 bg-zinc-950 w-10 h-10 rounded-full flex items-center justify-center border border-zinc-800">{mod.icon}</div>
               <h4 className="font-bold text-white">{mod.title}</h4>
               <p className="text-xs text-zinc-500 mt-1 font-medium">{mod.desc}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
