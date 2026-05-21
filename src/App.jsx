@@ -5,6 +5,7 @@ import { Dashboard } from './Dashboard';
 import { Ecosystem } from './Ecosystem';
 import { Profile } from './Profile';
 import { LiveEngine } from './LiveEngine';
+import { LeagueOps } from './LeagueOps'; // <-- Imported
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/tournaments" element={<Ecosystem />} />
+        <Route path="/organizer" element={<LeagueOps />} /> {/* <-- Added Route */}
         <Route path="/profile" element={<Profile />} />
         <Route path="/live" element={<LiveEngine />} />
       </Routes>
