@@ -2,36 +2,48 @@ import React, { useState } from 'react';
 import { Target, Mic } from 'lucide-react';
 import { useApp } from './AppContext'; // <-- Import global state hook
 
-export const LiveEngine = () => {
-  const { liveMatch, setLiveMatch } = useApp(); // Get current match variables from global state
+public const LiveEngine = () => {
+  // Destructure database synchronized states and functions from Context
+  const { liveMatch, setLiveMatch, updateDatabaseScore } = useApp(); 
   const [feed, setFeed] = useState([]);
   const [commentBox, setCommentBox] = useState("");
 
   const handleScore = (runVal) => {
-    // Dynamically update global context state
+    const updatedRuns = liveMatch.runs + runVal;
     const updatedBalls = liveMatch.balls + 1;
     const overStr = `${Math.floor(updatedBalls / 6)}.${updatedBalls % 6}`;
     
+    // 1. Optimistically update frontend view state instantly for ultra-fast UX
     setLiveMatch({
       ...liveMatch,
-      runs: liveMatch.runs + runVal,
+      runs: updatedRuns,
       balls: updatedBalls
     });
 
+    // 2. Append action event to local commentary list array
     setFeed([{ type: 'score', over: overStr, text: `Batter scores ${runVal} run(s).` }, ...feed]);
+
+    // 3. Stream data over REST directly into Spring Boot database repository
+    updateDatabaseScore(updatedRuns, liveMatch.wickets, updatedBalls);
   };
 
   const handleWicket = () => {
+    const updatedWickets = liveMatch.wickets + 1;
     const updatedBalls = liveMatch.balls + 1;
     const overStr = `${Math.floor(updatedBalls / 6)}.${updatedBalls % 6}`;
 
+    // 1. Optimistically update frontend view state instantly
     setLiveMatch({
       ...liveMatch,
-      wickets: liveMatch.wickets + 1,
+      wickets: updatedWickets,
       balls: updatedBalls
     });
 
+    // 2. Append action event to local commentary list array
     setFeed([{ type: 'wicket', over: overStr, text: `OUT! Huge wicket falls for ${liveMatch.teamA}.` }, ...feed]);
+
+    // 3. Stream data over REST directly into Spring Boot database repository
+    updateDatabaseScore(liveMatch.runs, updatedWickets, updatedBalls);
   };
 
   const handleCommentary = () => {
