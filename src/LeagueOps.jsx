@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from './AppContext';
 
-export default function LeagueOps() {
+// FIXED: Changed from export default to named export to match your routing imports
+export function LeagueOps() {
   const { addLeagueEvent } = useApp();
   
-  // State variables for form fields
   const [tName, setTName] = useState('');
   const [team1, setTeam1] = useState('');
   const [team2, setTeam2] = useState('');
@@ -12,13 +12,11 @@ export default function LeagueOps() {
 
   const handlePublish = (e) => {
     e.preventDefault();
-    
     if (!team1 || !team2) {
       alert("Please enter both Team Names!");
       return;
     }
 
-    // This object structures the names EXACTLY how our AppContext extracts them!
     const tournamentData = {
       teamA: team1,
       teamB: team2,
@@ -28,12 +26,10 @@ export default function LeagueOps() {
 
     addLeagueEvent(tournamentData);
     
-    // Clear out form inputs after successful dispatch
     setTName('');
     setTeam1('');
     setTeam2('');
     setMatchVenue('');
-    
     alert("🏆 Match Published Live Successfully!");
   };
 
