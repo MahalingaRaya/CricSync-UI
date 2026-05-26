@@ -1,65 +1,106 @@
-import React from 'react';
-import { MapPin, Shield, Target, Mic } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useApp } from './AppContext'; // <-- Hook context data
+import React, { useState } from 'react';
+import { useApp } from './AppContext';
 
-export const Dashboard = () => {
-  const { jobs, liveMatch } = useApp(); // Destructure state variables
+export default function Dashboard() {
+  const { liveMatch, jobs } = useApp();
+  const [commentaryLang, setCommentaryLang] = useState("KN"); // Switch languages between English & Kannada
 
-  const getIcon = (role) => {
-    if (role.includes("Umpire")) return <Shield className="text-amber-400" />;
-    if (role.includes("Scorer")) return <Target className="text-purple-400" />;
-    return <Mic className="text-cyan-400" />;
+  // Simulated identity check from local storage (defaults to Organizer for testing)
+  const userProfile = JSON.parse(localStorage.getItem("user")) || { role: "ORGANIZER" };
+
+  // Automated commentary generator mapped directly to live scores
+  const getBilingualText = () => {
+    if (liveMatch.wickets > 0) {
+      return {
+        EN: `OUT! Huge blow for the batting side! Clean bowled, the fielders are celebrating!`,
+        KN: `ಔಟ್! ಬ್ಯಾಟಿಂಗ್ ತಂಡಕ್ಕೆ ಭಾರಿ ಆಘಾತ! ಕ್ಲೀನ್ ಬೌಲ್ಡ್ ಆಗಿ ಬ್ಯಾಟ್ಸ್‌ಮನ್ ಪೆವಿಲಿಯನ್‌ಗೆ ವಾಪಸ್!`
+      };
+    }
+    return {
+      EN: `Good delivery, pushed safely to deep mid-wicket for a steady single. Score keeps moving.`,
+      KN: `ಅದ್ಭುತ ಪ್ರದರ್ಶನ, ಸಿಂಗಲ್ ರನ್ ಗಳಿಸುವ ಮೂಲಕ ಸ್ಕೋರ್ ಕಾರ್ಡ್ ಮುನ್ನಡೆಯುತ್ತಿದೆ.`
+    };
   };
 
+  const currentCommentary = getBilingualText();
+
   return (
-    <div className="p-4 max-w-7xl mx-auto space-y-6 mb-20">
+    <div className="bg-black text-white min-h-screen p-4 pb-24">
       
-      {/* DYNAMIC AUDIENCE LIVE SCORE CARD */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-zinc-950 to-zinc-900 border border-zinc-800/80 p-6 shadow-xl">
-        <div className="flex justify-between items-center mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500">
-          <span className="flex items-center gap-1.5 text-red-500"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />Live Scoreboard</span>
-          <span className="flex items-center gap-1"><MapPin size={12} /> {liveMatch.venue}</span>
+      {/* 1. DYNAMIC CRICKET LIVE SCOREBOARD */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-5 shadow-xl">
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-red-500 font-bold flex items-center gap-1.5 text-xs tracking-wider uppercase animate-pulse">
+            ● LIVE SCOREBOARD
+          </span>
+          <span className="text-zinc-400 text-xs font-bold tracking-wide bg-zinc-800 px-2.5 py-1 rounded-md">
+            📍 {liveMatch.venue || "LIVE"}
+          </span>
         </div>
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-black text-white">{liveMatch.teamA}</h2>
-            <div className="text-4xl font-black text-emerald-400 mt-1">
-              {liveMatch.runs}<span className="text-xl text-zinc-600">/{liveMatch.wickets}</span>
+
+        {/* This outputs your real inputs: MahaTech Mahi vs CricSync */}
+        <div className="flex justify-between items-center my-5">
+          <div className="flex-1">
+            <h2 className="text-xl font-black tracking-tight text-white">{liveMatch.teamA}</h2>
+            <p className="text-zinc-500 text-xs font-semibold mt-0.5">Innings 1</p>
+          </div>
+          
+          <div className="text-center bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-800/50">
+            <div className="text-emerald-400 text-3xl font-black tracking-tighter">
+              {liveMatch.runs}/{liveMatch.wickets}
             </div>
-            <p className="text-zinc-500 font-semibold text-xs mt-1">
+            <p className="text-zinc-400 text-[11px] font-bold mt-0.5">
               {Math.floor(liveMatch.balls / 6)}.{liveMatch.balls % 6} Overs
             </p>
           </div>
-          <div className="text-right opacity-30">
-            <h2 className="text-xl font-black text-white">{liveMatch.teamB}</h2>
-            <p className="text-zinc-500 font-bold text-xs mt-1">Yet to bat</p>
+
+          <div className="flex-1 text-right">
+            <h2 className="text-xl font-black tracking-tight text-zinc-400">{liveMatch.teamB}</h2>
+            <p className="text-zinc-500 text-xs font-semibold mt-0.5">Yet to bat</p>
           </div>
         </div>
-        <Link to="/live" className="block mt-4 text-center bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold py-2.5 rounded-xl border border-zinc-800">
-          Open Match Center / Commentary Feed
-        </Link>
       </div>
 
-      {/* DYNAMIC PROFESSIONALS MARKETPLACE */}
+      {/* 2. REAL-TIME BILINGUAL COMMENTARY STREAM */}
+      <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl mb-6">
+        <div className="flex justify-between items-center mb-3 border-b border-zinc-800 pb-2">
+          <h4 className="text-xs font-bold tracking-wider uppercase text-zinc-400">🎙️ Live Ball Feed</h4>
+          <div className="flex gap-1 bg-zinc-800 p-0.5 rounded-lg text-[10px] font-black">
+            <button onClick={() => setCommentaryLang("EN")} className={`px-2 py-1 rounded-md ${commentaryLang === 'EN' ? 'bg-white text-black' : 'text-zinc-400'}`}>EN</button>
+            <button onClick={() => setCommentaryLang("KN")} className={`px-2 py-1 rounded-md ${commentaryLang === 'KN' ? 'bg-white text-black' : 'text-zinc-400'}`}>ಕನ್ನಡ</button>
+          </div>
+        </div>
+        <p className="text-zinc-200 text-sm font-medium leading-relaxed">
+          {commentaryLang === "EN" ? currentCommentary.EN : currentCommentary.KN}
+        </p>
+      </div>
+
+      {/* 3. ROLES ACCESS CONTROLS NOTICE */}
+      {userProfile.role === 'ORGANIZER' && (
+        <div className="bg-emerald-950/20 border border-emerald-800/60 p-3 rounded-xl mb-6 text-xs text-emerald-400 font-semibold flex justify-between items-center">
+          <span>⚡ Organizer Access Enabled: You can modify layouts via LeagueOps tab</span>
+          <span className="bg-emerald-500 text-black px-2 py-0.5 rounded text-[10px] font-black">ADMIN</span>
+        </div>
+      )}
+
+      {/* 4. MARKETPLACE ECOSYSTEM (HIRES & SEEKERS) */}
+      <h3 className="text-zinc-500 font-bold uppercase tracking-wider text-[11px] mb-3 px-1">
+        Available Marketplace Openings
+      </h3>
       <div className="space-y-3">
-        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-1">Available Marketplace Openings</h3>
-        
-        {jobs.map((job, i) => (
-          <div key={i} className="bg-zinc-900/40 border border-zinc-800/60 p-4 rounded-2xl flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center border border-zinc-800 shrink-0">
-                {getIcon(job.role)}
-              </div>
-              <div>
-                <h4 className="font-bold text-white text-sm">{job.role}</h4>
-                <p className="text-xs text-zinc-400 font-medium">{job.league}</p>
-                <p className="text-[10px] text-zinc-500 font-semibold mt-0.5 flex items-center gap-0.5"><MapPin size={10}/>{job.venue}</p>
-              </div>
+        {jobs.map((job, idx) => (
+          <div key={idx} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex justify-between items-center shadow-md">
+            <div>
+              <h4 className="font-bold text-white text-sm">{job.role}</h4>
+              <p className="text-zinc-400 text-xs mt-0.5">{job.league}</p>
+              <p className="text-zinc-500 text-[11px] mt-1">📍 {job.venue}</p>
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-xs font-black text-emerald-400 mb-1.5">₹ {job.pay}</p>
-              <button onClick={() => alert("Application submitted successfully to the tournament organizer!")} className="bg-white text-black text-[11px] font-bold px-3 py-1.5 rounded-full hover:bg-zinc-200">
+            <div className="text-right">
+              <span className="text-emerald-400 font-bold text-xs block">{job.pay}</span>
+              <button 
+                onClick={() => alert(`Applied successfully for position: ${job.role}!`)}
+                className="bg-white text-black font-black text-[11px] px-3.5 py-1.5 rounded-full mt-2 hover:bg-zinc-200 transition"
+              >
                 Apply
               </button>
             </div>
@@ -69,4 +110,4 @@ export const Dashboard = () => {
 
     </div>
   );
-};
+}
