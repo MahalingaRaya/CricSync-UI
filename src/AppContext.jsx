@@ -12,7 +12,7 @@ export const AppProvider = ({ children }) => {
     { role: "Scorer Required", league: "Whitefield Premier League", venue: "Varthur Sports Ground", pay: "1,200/Match" }
   ]);
 
-  // Initialized structural layout matching your components
+  // Global live match state mapped to work seamlessly with UI components
   const [liveMatch, setLiveMatch] = useState({
     id: null,
     teamA: "Loading...",
@@ -30,7 +30,7 @@ export const AppProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         
-        // This structural mapping fixes the "Loading..." bug by pointing to your true model properties
+        // Maps backend structural model properties into local frontend state variables
         setLiveMatch({
           id: data.id,
           teamA: data.teamA,
@@ -38,7 +38,7 @@ export const AppProvider = ({ children }) => {
           runs: data.runsA,       // Safely reads your database's runsA
           wickets: data.wicketsA, // Safely reads your database's wicketsA
           balls: data.ballsA,     // Safely reads your database's ballsA
-          venue: data.status      // Safely displays your live status label
+          venue: data.status      // Displays the status string ("LIVE", "COMPLETED", etc.)
         });
       }
     } catch (error) {
@@ -118,5 +118,5 @@ export const AppProvider = ({ children }) => {
   );
 };
 
-// Keeps your existing custom context hooks fully supported
-public const useApp = () => useContext(AppContext);
+// FIXED: Removed 'public' keyword. Standard JavaScript export for custom context hook.
+export const useApp = () => useContext(AppContext);
