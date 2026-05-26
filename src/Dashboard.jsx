@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useApp } from './AppContext';
 
-export default function Dashboard() {
+// FIXED: Changed from export default to named export to match your routing imports
+export function Dashboard() {
   const { liveMatch, jobs } = useApp();
-  const [commentaryLang, setCommentaryLang] = useState("KN"); // Switch languages between English & Kannada
+  const [commentaryLang, setCommentaryLang] = useState("KN"); 
 
-  // Simulated identity check from local storage (defaults to Organizer for testing)
   const userProfile = JSON.parse(localStorage.getItem("user")) || { role: "ORGANIZER" };
 
-  // Automated commentary generator mapped directly to live scores
   const getBilingualText = () => {
     if (liveMatch.wickets > 0) {
       return {
@@ -27,7 +26,6 @@ export default function Dashboard() {
   return (
     <div className="bg-black text-white min-h-screen p-4 pb-24">
       
-      {/* 1. DYNAMIC CRICKET LIVE SCOREBOARD */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-5 shadow-xl">
         <div className="flex justify-between items-center mb-3">
           <span className="text-red-500 font-bold flex items-center gap-1.5 text-xs tracking-wider uppercase animate-pulse">
@@ -38,7 +36,6 @@ export default function Dashboard() {
           </span>
         </div>
 
-        {/* This outputs your real inputs: MahaTech Mahi vs CricSync */}
         <div className="flex justify-between items-center my-5">
           <div className="flex-1">
             <h2 className="text-xl font-black tracking-tight text-white">{liveMatch.teamA}</h2>
@@ -61,7 +58,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 2. REAL-TIME BILINGUAL COMMENTARY STREAM */}
       <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl mb-6">
         <div className="flex justify-between items-center mb-3 border-b border-zinc-800 pb-2">
           <h4 className="text-xs font-bold tracking-wider uppercase text-zinc-400">🎙️ Live Ball Feed</h4>
@@ -75,7 +71,6 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* 3. ROLES ACCESS CONTROLS NOTICE */}
       {userProfile.role === 'ORGANIZER' && (
         <div className="bg-emerald-950/20 border border-emerald-800/60 p-3 rounded-xl mb-6 text-xs text-emerald-400 font-semibold flex justify-between items-center">
           <span>⚡ Organizer Access Enabled: You can modify layouts via LeagueOps tab</span>
@@ -83,7 +78,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* 4. MARKETPLACE ECOSYSTEM (HIRES & SEEKERS) */}
       <h3 className="text-zinc-500 font-bold uppercase tracking-wider text-[11px] mb-3 px-1">
         Available Marketplace Openings
       </h3>
