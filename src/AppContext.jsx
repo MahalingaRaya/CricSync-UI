@@ -11,16 +11,16 @@ export const AppProvider = ({ children }) => {
     { role: "Scorer Required", league: "Whitefield Premier League", venue: "Varthur Ground", pay: "1,200/Match" }
   ]);
 
-  // 2. Global live match state with classic local defaults
+  // 2. Global live match state with pristine local fallbacks
   const [liveMatch, setLiveMatch] = useState({
     id: null,
-    teamA: "RCB",
-    teamB: "CSK",
+    teamA: "MahaTech Mahi",
+    teamB: "CricSync",
     runs: 0,
     wickets: 0,
     balls: 0,
     venue: "LIVE",
-    leagueName: "Indian Premier League"
+    leagueName: "Corporate Premier League 2K26"
   });
 
   // 3. Fetching from Live Database Engine
@@ -32,13 +32,13 @@ export const AppProvider = ({ children }) => {
         if (data) {
           setLiveMatch({
             id: data.id,
-            teamA: data.teamA || data.teamAName || "RCB", 
-            teamB: data.teamB || data.teamBName || "CSK",
+            teamA: data.teamA || data.teamAName || "MahaTech Mahi", 
+            teamB: data.teamB || data.teamBName || "CricSync",
             runs: data.runsA !== undefined ? data.runsA : 0,       
             wickets: data.wicketsA !== undefined ? data.wicketsA : 0, 
             balls: data.ballsA !== undefined ? data.ballsA : 0,     
             venue: data.status || "LIVE",
-            leagueName: data.leagueName || "T20 Match"
+            leagueName: data.leagueName || "Corporate Premier League 2K26"
           });
         }
       }
@@ -55,17 +55,15 @@ export const AppProvider = ({ children }) => {
 
   // 4. Action: Catch form inputs dynamically and save to database
   const addLeagueEvent = async (newEvent) => {
-    // Fallback tracker: Extracts text regardless of what your form keys are named!
-    const inputTeamA = newEvent.teamA || newEvent.teamOne || newEvent.team1 || newEvent.hostTeam || "RCB";
-    const inputTeamB = newEvent.teamB || newEvent.teamTwo || newEvent.team2 || newEvent.visitorTeam || "CSK";
-    const inputLeague = newEvent.league || newEvent.leagueName || newEvent.tournament || "Local League";
-    const inputVenue = newEvent.venue || "Bengaluru";
+    const inputTeamA = newEvent.teamA || newEvent.teamOne || newEvent.team1 || newEvent.hostTeam || "MahaTech Mahi";
+    const inputTeamB = newEvent.teamB || newEvent.teamTwo || newEvent.team2 || newEvent.visitorTeam || "CricSync";
+    const inputLeague = newEvent.league || newEvent.leagueName || newEvent.tournament || "Corporate Premier League 2K26";
+    const inputVenue = newEvent.venue || "International Stadium Bengaluru";
 
     // Prepend to marketplace array
     const jobFormat = { role: "Official Required", league: inputLeague, venue: inputVenue, pay: "TBD" };
     setJobs((prevJobs) => [jobFormat, ...prevJobs]);
 
-    // Build perfect JSON payload matching your Spring Boot JPA model
     const matchPayload = {
       status: "LIVE",
       teamA: inputTeamA,
@@ -89,13 +87,13 @@ export const AppProvider = ({ children }) => {
         const savedMatch = await response.json();
         setLiveMatch({
           id: savedMatch.id,
-          teamA: savedMatch.teamA || savedMatch.teamAName,
-          teamB: savedMatch.teamB || savedMatch.teamBName,
+          teamA: savedMatch.teamA || savedMatch.teamAName || inputTeamA,
+          teamB: savedMatch.teamB || savedMatch.teamBName || inputTeamB,
           runs: savedMatch.runsA ?? 0,
           wickets: savedMatch.wicketsA ?? 0,
           balls: savedMatch.ballsA ?? 0,
-          venue: savedMatch.status,
-          leagueName: savedMatch.leagueName
+          venue: savedMatch.status || "LIVE",
+          leagueName: savedMatch.leagueName || inputLeague
         });
       }
     } catch (error) {
@@ -111,15 +109,17 @@ export const AppProvider = ({ children }) => {
       });
       if (response.ok) {
         const updatedMatch = await response.json();
+        
         setLiveMatch({
           id: updatedMatch.id,
-          teamA: updatedMatch.teamA || updatedMatch.teamAName || "RCB",
-          teamB: updatedMatch.teamB || updatedMatch.teamBName || "CSK",
-          runs: updatedMatch.runsA ?? 0,
-          wickets: updatedMatch.wicketsA ?? 0,
-          balls: updatedMatch.ballsA ?? 0,
-          venue: updatedMatch.status,
-          leagueName: updatedMatch.leagueName
+          // CRITICAL FIX: Fall back to what's currently active on the UI instead of resetting to defaults
+          teamA: updatedMatch.teamA || updatedMatch.teamAName || liveMatch.teamA,
+          teamB: updatedMatch.teamB || updatedMatch.teamBName || liveMatch.teamB,
+          runs: updatedMatch.runsA ?? newRuns,
+          wickets: updatedMatch.wicketsA ?? newWickets,
+          balls: updatedMatch.ballsA ?? newBalls,
+          venue: updatedMatch.status || liveMatch.venue,
+          leagueName: updatedMatch.leagueName || liveMatch.leagueName
         });
       }
     } catch (error) {
