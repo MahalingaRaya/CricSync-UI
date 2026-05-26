@@ -2,14 +2,22 @@ import React, { useState } from 'react';
 import { useApp } from './AppContext'; 
 
 export function Dashboard() {
-  const { liveMatch, jobs } = useApp();
+  // FIXED: Added customCommentary to destructuring so it updates live when you click Post!
+  const { liveMatch, jobs, customCommentary } = useApp();
   const [commentaryLang, setCommentaryLang] = useState("KN"); 
 
   const userProfile = JSON.parse(localStorage.getItem("user")) || { role: "ORGANIZER" };
 
-  // FIXED: Smart evaluation layer ensures commentary matches the actual overs bowled
   const getBilingualText = () => {
-    // 1. If match hasn't started yet (0.0 Overs), show pre-match introduction
+    // 1. OVERRIDE LAYER: If an organizer types and posts a custom message, display it immediately!
+    if (customCommentary && customCommentary.trim() !== "") {
+      return {
+        EN: customCommentary,
+        KN: `🎙️ ಲೈವ್ ಅಪ್ಡೇಟ್: "${customCommentary}"`
+      };
+    }
+
+    // 2. Default: If match hasn't started yet (0.0 Overs), show pre-match introduction
     if (!liveMatch.balls || liveMatch.balls === 0) {
       return {
         EN: `Welcome live! Teams are stepping onto the field at ${liveMatch.venue || 'the stadium'}. Match about to begin shortly!`,
@@ -17,7 +25,7 @@ export function Dashboard() {
       };
     }
     
-    // 2. If a wicket just fell
+    // 3. Default: If a wicket just fell
     if (liveMatch.wickets > 0) {
       return {
         EN: `OUT! Huge blow for the batting side! Clean bowled, the fielders are celebrating!`,
@@ -25,7 +33,7 @@ export function Dashboard() {
       };
     }
     
-    // 3. Standard ball delivery update
+    // 4. Default: Standard ball delivery update
     return {
       EN: `Good delivery, pushed safely to deep mid-wicket for a steady single. Score keeps moving.`,
       KN: `ಅದ್ಭುತ ಪ್ರದರ್ಶನ, ಸಿಂಗಲ್ ರನ್ ಗಳಿಸುವ ಮೂಲಕ ಸ್ಕೋರ್ ಕಾರ್ಡ್ ಮುನ್ನಡೆಯುತ್ತಿದೆ.`
@@ -77,7 +85,7 @@ export function Dashboard() {
       {/* BILINGUAL COMMENTARY FEED */}
       <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl mb-6">
         <div className="flex justify-between items-center mb-3 border-b border-zinc-800 pb-2">
-          <h4 className="text-xs font-bold tracking-wider uppercase text-zinc-400">🎙️ Live Ball Feed center</h4>
+          <h4 className="text-xs font-bold tracking-wider uppercase text-zinc-400">🎙️ Live Ball Feed Center</h4>
           <div className="flex gap-1 bg-zinc-800 p-0.5 rounded-lg text-[10px] font-black">
             <button onClick={() => setCommentaryLang("EN")} className={`px-2 py-1 rounded-md transition ${commentaryLang === 'EN' ? 'bg-white text-black' : 'text-zinc-400'}`}>EN</button>
             <button onClick={() => setCommentaryLang("KN")} className={`px-2 py-1 rounded-md transition ${commentaryLang === 'KN' ? 'bg-white text-black' : 'text-zinc-400'}`}>ಕನ್ನಡ</button>
