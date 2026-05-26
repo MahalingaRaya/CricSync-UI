@@ -4,14 +4,12 @@ const AppContext = createContext();
 const API_BASE_URL = "https://cricsync-engine.onrender.com/api/matches"; 
 
 export const AppProvider = ({ children }) => {
-  // 1. Marketplace state for Hires & Seekers ecosystem
   const [jobs, setJobs] = useState([
     { role: "Commentator (Kannada)", league: "Bengaluru T20 League", venue: "Chinnaswamy Stadium", pay: "3,500/Match" },
     { role: "Umpire Required", league: "Bangalore Corporate Cup", venue: "Gopalan Sports Ground", pay: "2,500/Match" },
     { role: "Scorer Required", league: "Whitefield Premier League", venue: "Varthur Ground", pay: "1,200/Match" }
   ]);
 
-  // 2. Global live match state with pristine local fallbacks
   const [liveMatch, setLiveMatch] = useState({
     id: null,
     teamA: "MahaTech Mahi",
@@ -23,7 +21,9 @@ export const AppProvider = ({ children }) => {
     leagueName: "Corporate Premier League 2K26"
   });
 
-  // 3. Fetching from Live Database Engine
+  // NEW: Global state variable to capture your custom Broadcaster input strings dynamically!
+  const [customCommentary, setCustomCommentary] = useState("");
+
   const fetchActiveMatch = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/active`);
@@ -53,16 +53,17 @@ export const AppProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // 4. Action: Catch form inputs dynamically and save to database
   const addLeagueEvent = async (newEvent) => {
-    const inputTeamA = newEvent.teamA || newEvent.teamOne || newEvent.team1 || newEvent.hostTeam || "MahaTech Mahi";
-    const inputTeamB = newEvent.teamB || newEvent.teamTwo || newEvent.team2 || newEvent.visitorTeam || "CricSync";
-    const inputLeague = newEvent.league || newEvent.leagueName || newEvent.tournament || "Corporate Premier League 2K26";
+    const inputTeamA = newEvent.teamA || "MahaTech Mahi";
+    const inputTeamB = newEvent.teamB || "CricSync";
+    const inputLeague = newEvent.league || "Corporate Premier League 2K26";
     const inputVenue = newEvent.venue || "International Stadium Bengaluru";
 
-    // Prepend to marketplace array
     const jobFormat = { role: "Official Required", league: inputLeague, venue: inputVenue, pay: "TBD" };
     setJobs((prevJobs) => [jobFormat, ...prevJobs]);
+
+    // Clear previous custom text when a brand new match begins
+    setCustomCommentary("");
 
     const matchPayload = {
       status: "LIVE",
@@ -101,7 +102,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // 5. Action: Update Scorecard live from Scorer panel
   const updateDatabaseScore = async (newRuns, newWickets, newBalls) => {
     try {
       const response = await fetch(`${API_BASE_URL}/update?runs=${newRuns}&wickets=${newWickets}&balls=${newBalls}`, {
@@ -109,10 +109,8 @@ export const AppProvider = ({ children }) => {
       });
       if (response.ok) {
         const updatedMatch = await response.json();
-        
         setLiveMatch({
           id: updatedMatch.id,
-          // CRITICAL FIX: Fall back to what's currently active on the UI instead of resetting to defaults
           teamA: updatedMatch.teamA || updatedMatch.teamAName || liveMatch.teamA,
           teamB: updatedMatch.teamB || updatedMatch.teamBName || liveMatch.teamB,
           runs: updatedMatch.runsA ?? newRuns,
@@ -121,6 +119,9 @@ export const AppProvider = ({ children }) => {
           venue: updatedMatch.status || liveMatch.venue,
           leagueName: updatedMatch.leagueName || liveMatch.leagueName
         });
+        
+        // Reset custom input text on a fresh score change to allow dynamic default messages
+        setCustomCommentary("");
       }
     } catch (error) {
       console.error("Failed to sync score changes securely:", error);
@@ -128,7 +129,7 @@ export const AppProvider = ({ children }) => {
   };
 
   return (
-    <AppContext.Provider value={{ jobs, liveMatch, setLiveMatch, addLeagueEvent, updateDatabaseScore }}>
+    <AppContext.Provider value={{ jobs, liveMatch, setLiveMatch, customCommentary, setCustomCommentary, addLeagueEvent, updateDatabaseScore }}>
       {children}
     </AppContext.Provider>
   );
