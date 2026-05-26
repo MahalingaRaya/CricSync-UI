@@ -3,8 +3,8 @@ import { Target, Mic } from 'lucide-react';
 import { useApp } from './AppContext'; // Secure Context Link
 
 export const LiveEngine = () => {
-  // Destructure database synchronized states and functions from Context
-  const { liveMatch, setLiveMatch, updateDatabaseScore } = useApp(); 
+  // FIXED: Destructured setCustomCommentary to connect this text field to the global Dashboard feed!
+  const { liveMatch, setLiveMatch, updateDatabaseScore, setCustomCommentary } = useApp(); 
   const [feed, setFeed] = useState([]);
   const [commentBox, setCommentBox] = useState("");
 
@@ -13,7 +13,7 @@ export const LiveEngine = () => {
     const updatedBalls = liveMatch.balls + 1;
     const overStr = `${Math.floor(updatedBalls / 6)}.${updatedBalls % 6}`;
     
-    // 1. Instantly update the local UI screen state smoothly
+    // Instantly update the local UI screen state smoothly
     setLiveMatch({
       ...liveMatch,
       runs: updatedRuns,
@@ -22,7 +22,7 @@ export const LiveEngine = () => {
 
     setFeed([{ type: 'score', over: overStr, text: `${liveMatch.teamA} scores ${runVal} run(s).` }, ...feed]);
     
-    // 2. FIXED: Pushes current exact metrics to Spring Boot API immediately
+    // Pushes current exact metrics to Spring Boot API immediately
     updateDatabaseScore(updatedRuns, liveMatch.wickets, updatedBalls);
   };
 
@@ -31,7 +31,7 @@ export const LiveEngine = () => {
     const updatedBalls = liveMatch.balls + 1;
     const overStr = `${Math.floor(updatedBalls / 6)}.${updatedBalls % 6}`;
 
-    // 1. Instantly update the local UI screen state smoothly
+    // Instantly update the local UI screen state smoothly
     setLiveMatch({
       ...liveMatch,
       wickets: updatedWickets,
@@ -40,14 +40,20 @@ export const LiveEngine = () => {
 
     setFeed([{ type: 'wicket', over: overStr, text: `OUT! Huge wicket falls for ${liveMatch.teamA}.` }, ...feed]);
     
-    // 2. FIXED: Uses the true current runs value instead of relying on asynchronous state lag
+    // Uses the true current runs value instead of relying on asynchronous state lag
     updateDatabaseScore(liveMatch.runs, updatedWickets, updatedBalls);
   };
 
   const handleCommentary = () => {
-    if (!commentBox) return;
+    if (!commentBox.trim()) return;
     const overStr = `${Math.floor(liveMatch.balls / 6)}.${liveMatch.balls % 6}`;
+    
+    // 1. Adds locally to the keypad's sidebar preview list
     setFeed([{ type: 'commentary', over: overStr, text: commentBox }, ...feed]);
+    
+    // 2. FIXED: Dispatches your typed input text straight to the global AppContext state store!
+    setCustomCommentary(commentBox);
+    
     setCommentBox(""); 
   };
 
@@ -78,7 +84,7 @@ export const LiveEngine = () => {
         
         {/* Scorer Keypad */}
         <div className="bg-zinc-900/50 border border-zinc-800/80 p-6 rounded-3xl">
-          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Scorer Keypad中心</h3>
+          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Scorer Keypad</h3>
           <div className="grid grid-cols-3 gap-3">
             {[0, 1, 2, 3, 4, 6].map(num => (
               <button key={num} onClick={() => handleScore(num)} className="bg-zinc-800 hover:bg-zinc-700 text-white font-black text-xl h-14 rounded-2xl transition active:scale-95">
@@ -88,7 +94,6 @@ export const LiveEngine = () => {
             <button onClick={handleWicket} className="bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 font-black text-sm h-14 rounded-2xl col-span-2 transition active:scale-95">
               ☝ WICKET
             </button>
-            {/* FIXED: Keeps dot ball mapping synchronized under standard scores parameters cleanly */}
             <button onClick={() => handleScore(0)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black text-sm h-14 rounded-2xl transition active:scale-95">
               DOT BALL
             </button>
