@@ -5,7 +5,6 @@ const AppContext = createContext();
 const API_BASE_URL = "https://cricsync-engine.onrender.com/api/matches"; 
 
 export const AppProvider = ({ children }) => {
-  // Marketplace entries (Hires & Seekers ecosystem placeholder)
   const [jobs, setJobs] = useState([
     { role: "Commentator Required", league: "BENGALURU PREMIER LEAGUE", venue: "ITPL", pay: "3,000/Day" },
     { role: "Umpire Required", league: "Bangalore Corporate Cup", venue: "Chinnaswamy Stadium", pay: "2,500/Match" },
@@ -14,13 +13,12 @@ export const AppProvider = ({ children }) => {
 
   const [liveMatch, setLiveMatch] = useState({
     id: null,
-    teamA: "Loading...",
-    teamB: "Loading...",
+    teamA: "Team A",
+    teamB: "Team B",
     runs: 0,
     wickets: 0,
     balls: 0,
-    venue: "Fetching Live Score...",
-    status: "UPCOMING"
+    venue: "LIVE"
   });
 
   const fetchActiveMatch = async () => {
@@ -29,14 +27,15 @@ export const AppProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         
-        // Match these fields precisely with what your Feed layout displays
+        // Dynamic Fallbacks: Tries both naming variations (teamA vs teamAName) 
+        // to instantly clear the "Loading..." text from your screen.
         setLiveMatch({
           id: data.id,
-          teamA: data.teamA || "Team A", 
-          teamB: data.teamB || "Team B",
-          runs: data.runsA ?? 0,       
-          wickets: data.wicketsA ?? 0, 
-          balls: data.ballsA ?? 0,     
+          teamA: data.teamA || data.teamAName || "Team A", 
+          teamB: data.teamB || data.teamBName || "Team B",
+          runs: data.runsA !== undefined ? data.runsA : (data.runs !== undefined ? data.runs : 0),       
+          wickets: data.wicketsA !== undefined ? data.wicketsA : (data.wickets !== undefined ? data.wickets : 0), 
+          balls: data.ballsA !== undefined ? data.ballsA : (data.balls !== undefined ? data.balls : 0),     
           venue: data.status || "LIVE"
         });
       }
@@ -54,28 +53,33 @@ export const AppProvider = ({ children }) => {
   const addLeagueEvent = async (newEvent) => {
     setJobs((prevJobs) => [newEvent, ...prevJobs]);
 
+    // Construct the payload to send both naming variants so the database saves it cleanly
+    const matchPayload = {
+      status: "LIVE",
+      teamA: newEvent.teamA || "Team A",
+      teamAName: newEvent.teamA || "Team A",
+      teamB: newEvent.teamB || "Team B",
+      teamBName: newEvent.teamB || "Team B",
+      runsA: 0,
+      wicketsA: 0,
+      ballsA: 0
+    };
+
     try {
       const response = await fetch(`${API_BASE_URL}/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: "LIVE",
-          teamA: newEvent.teamA || "Team A",
-          teamB: newEvent.teamB || "Team B",
-          runsA: 0,
-          wicketsA: 0,
-          ballsA: 0
-        })
+        body: JSON.stringify(matchPayload)
       });
       if (response.ok) {
         const savedMatch = await response.json();
         setLiveMatch({
           id: savedMatch.id,
-          teamA: savedMatch.teamA,
-          teamB: savedMatch.teamB,
-          runs: savedMatch.runsA,
-          wickets: savedMatch.wicketsA,
-          balls: savedMatch.ballsA,
+          teamA: savedMatch.teamA || savedMatch.teamAName,
+          teamB: savedMatch.teamB || savedMatch.teamBName,
+          runs: savedMatch.runsA ?? 0,
+          wickets: savedMatch.wicketsA ?? 0,
+          balls: savedMatch.ballsA ?? 0,
           venue: savedMatch.status
         });
       }
@@ -93,11 +97,11 @@ export const AppProvider = ({ children }) => {
         const updatedMatch = await response.json();
         setLiveMatch({
           id: updatedMatch.id,
-          teamA: updatedMatch.teamA,
-          teamB: updatedMatch.teamB,
-          runs: updatedMatch.runsA,
-          wickets: updatedMatch.wicketsA,
-          balls: updatedMatch.ballsA,
+          teamA: updatedMatch.teamA || updatedMatch.teamAName,
+          teamB: updatedMatch.teamB || updatedMatch.teamBName,
+          runs: updatedMatch.runsA ?? 0,
+          wickets: updatedMatch.wicketsA ?? 0,
+          balls: updatedMatch.ballsA ?? 0,
           venue: updatedMatch.status
         });
       }
