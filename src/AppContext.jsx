@@ -2,17 +2,16 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AppContext = createContext();
 
-// Pointing directly to your live Render environment URL
 const API_BASE_URL = "https://cricsync-engine.onrender.com/api/matches"; 
 
 export const AppProvider = ({ children }) => {
-  // Keeps your existing hardcoded placeholder array running seamlessly
+  // Marketplace entries (Hires & Seekers ecosystem placeholder)
   const [jobs, setJobs] = useState([
+    { role: "Commentator Required", league: "BENGALURU PREMIER LEAGUE", venue: "ITPL", pay: "3,000/Day" },
     { role: "Umpire Required", league: "Bangalore Corporate Cup", venue: "Chinnaswamy Stadium", pay: "2,500/Match" },
     { role: "Scorer Required", league: "Whitefield Premier League", venue: "Varthur Sports Ground", pay: "1,200/Match" }
   ]);
 
-  // Global live match state mapped to work seamlessly with UI components
   const [liveMatch, setLiveMatch] = useState({
     id: null,
     teamA: "Loading...",
@@ -20,25 +19,25 @@ export const AppProvider = ({ children }) => {
     runs: 0,
     wickets: 0,
     balls: 0,
-    venue: "Fetching Live Score..."
+    venue: "Fetching Live Score...",
+    status: "UPCOMING"
   });
 
-  // Pull active match from your live Render URL & map your Java database fields safely
   const fetchActiveMatch = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/active`);
       if (response.ok) {
         const data = await response.json();
         
-        // Maps backend structural model properties into local frontend state variables
+        // Match these fields precisely with what your Feed layout displays
         setLiveMatch({
           id: data.id,
-          teamA: data.teamA,
-          teamB: data.teamB,
-          runs: data.runsA,       // Safely reads your database's runsA
-          wickets: data.wicketsA, // Safely reads your database's wicketsA
-          balls: data.ballsA,     // Safely reads your database's ballsA
-          venue: data.status      // Displays the status string ("LIVE", "COMPLETED", etc.)
+          teamA: data.teamA || "Team A", 
+          teamB: data.teamB || "Team B",
+          runs: data.runsA ?? 0,       
+          wickets: data.wicketsA ?? 0, 
+          balls: data.ballsA ?? 0,     
+          venue: data.status || "LIVE"
         });
       }
     } catch (error) {
@@ -46,14 +45,12 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Poll backend database every 3 seconds to keep match scores live across devices
   useEffect(() => {
     fetchActiveMatch();
     const interval = setInterval(fetchActiveMatch, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // Action: Post tournament layout from Form and synchronize state directly with cloud data
   const addLeagueEvent = async (newEvent) => {
     setJobs((prevJobs) => [newEvent, ...prevJobs]);
 
@@ -62,10 +59,9 @@ export const AppProvider = ({ children }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          leagueName: newEvent.league,
-          teamA: newEvent.teamA,
-          teamB: newEvent.teamB,
-          venue: newEvent.venue,
+          status: "LIVE",
+          teamA: newEvent.teamA || "Team A",
+          teamB: newEvent.teamB || "Team B",
           runsA: 0,
           wicketsA: 0,
           ballsA: 0
@@ -88,7 +84,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Action: Push button adjustments directly to live server query params
   const updateDatabaseScore = async (newRuns, newWickets, newBalls) => {
     try {
       const response = await fetch(`${API_BASE_URL}/update?runs=${newRuns}&wickets=${newWickets}&balls=${newBalls}`, {
@@ -118,5 +113,4 @@ export const AppProvider = ({ children }) => {
   );
 };
 
-// FIXED: Removed 'public' keyword. Standard JavaScript export for custom context hook.
 export const useApp = () => useContext(AppContext);
