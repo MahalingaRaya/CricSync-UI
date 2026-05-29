@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from './AppContext';
 
-// FIXED: Changed from export default to named export to match your routing imports
 export function LeagueOps() {
   const { addLeagueEvent } = useApp();
   
@@ -17,6 +16,7 @@ export function LeagueOps() {
       return;
     }
 
+    // Structures inputs cleanly to pass downstream to the new AppContext function
     const tournamentData = {
       teamA: team1,
       teamB: team2,
@@ -30,7 +30,7 @@ export function LeagueOps() {
     setTeam1('');
     setTeam2('');
     setMatchVenue('');
-    alert("🏆 Match Published Live Successfully!");
+    alert("🏆 Match Initialized and Published Successfully!");
   };
 
   return (
