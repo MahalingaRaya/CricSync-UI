@@ -4,12 +4,14 @@ const AppContext = createContext();
 const API_BASE_URL = "https://cricsync-engine.onrender.com/api/matches"; 
 
 export const AppProvider = ({ children }) => {
+  // 1. Marketplace state for Hires & Seekers ecosystem
   const [jobs, setJobs] = useState([
     { role: "Commentator (Kannada)", league: "Bengaluru T20 League", venue: "Chinnaswamy Stadium", pay: "3,500/Match" },
     { role: "Umpire Required", league: "Bangalore Corporate Cup", venue: "Gopalan Sports Ground", pay: "2,500/Match" },
     { role: "Scorer Required", league: "Whitefield Premier League", venue: "Varthur Ground", pay: "1,200/Match" }
   ]);
 
+  // 2. Global live match state with custom system defaults
   const [liveMatch, setLiveMatch] = useState({
     id: null,
     teamA: "MahaTech Mahi",
@@ -21,9 +23,12 @@ export const AppProvider = ({ children }) => {
     leagueName: "Corporate Premier League 2K26"
   });
 
-  // NEW: Global state variable to capture your custom Broadcaster input strings dynamically!
   const [customCommentary, setCustomCommentary] = useState("");
+  
+  // NEW SYSTEM STATE: Tracks the last clicked keypad action ("0", "1", "4", "6", "W")
+  const [lastBallResult, setLastBallResult] = useState("");
 
+  // 3. Fetching from Live Database Engine
   const fetchActiveMatch = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/active`);
@@ -62,8 +67,9 @@ export const AppProvider = ({ children }) => {
     const jobFormat = { role: "Official Required", league: inputLeague, venue: inputVenue, pay: "TBD" };
     setJobs((prevJobs) => [jobFormat, ...prevJobs]);
 
-    // Clear previous custom text when a brand new match begins
+    // Clear previous dynamic session histories on new match initialization
     setCustomCommentary("");
+    setLastBallResult("");
 
     const matchPayload = {
       status: "LIVE",
@@ -102,7 +108,13 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const updateDatabaseScore = async (newRuns, newWickets, newBalls) => {
+  // FIXED: Now accepts ballEvent type parameter ("0", "1", "4", "6", "W") to sync globally 
+  const updateDatabaseScore = async (newRuns, newWickets, newBalls, ballEvent = "") => {
+    if (ballEvent) {
+      setLastBallResult(ballEvent);
+      setCustomCommentary(""); // Wipes custom broadcast overrides to favor the latest ball commentary
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/update?runs=${newRuns}&wickets=${newWickets}&balls=${newBalls}`, {
         method: 'PUT'
@@ -119,9 +131,6 @@ export const AppProvider = ({ children }) => {
           venue: updatedMatch.status || liveMatch.venue,
           leagueName: updatedMatch.leagueName || liveMatch.leagueName
         });
-        
-        // Reset custom input text on a fresh score change to allow dynamic default messages
-        setCustomCommentary("");
       }
     } catch (error) {
       console.error("Failed to sync score changes securely:", error);
@@ -129,7 +138,7 @@ export const AppProvider = ({ children }) => {
   };
 
   return (
-    <AppContext.Provider value={{ jobs, liveMatch, setLiveMatch, customCommentary, setCustomCommentary, addLeagueEvent, updateDatabaseScore }}>
+    <AppContext.Provider value={{ jobs, liveMatch, setLiveMatch, customCommentary, setCustomCommentary, lastBallResult, setLastBallResult, addLeagueEvent, updateDatabaseScore }}>
       {children}
     </AppContext.Provider>
   );
