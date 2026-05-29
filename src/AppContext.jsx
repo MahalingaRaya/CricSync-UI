@@ -4,57 +4,71 @@ const AppContext = createContext();
 const API_BASE_URL = "https://cricsync-engine.onrender.com/api/matches"; 
 
 export const AppProvider = ({ children }) => {
-  // 1. Marketplace state for Hires & Seekers ecosystem
-  const [jobs, setJobs] = useState([
-    { role: "Commentator (Kannada)", league: "Bengaluru T20 League", venue: "Chinnaswamy Stadium", pay: "3,500/Match" },
-    { role: "Umpire Required", league: "Bangalore Corporate Cup", venue: "Gopalan Sports Ground", pay: "2,500/Match" },
-    { role: "Scorer Required", league: "Whitefield Premier League", venue: "Varthur Ground", pay: "1,200/Match" }
-  ]);
-
-  // 2. Global live match state with custom system defaults
+  const [jobs, setJobs] = useState([]);
+  const [timeline, setTimeline] = useState([]);
+  const [user, setUser] = useState({ username: "MahaTech Mahi", role: "ORGANIZER" }); // Default Session State
+  
   const [liveMatch, setLiveMatch] = useState({
-    id: null,
-    teamA: "MahaTech Mahi",
+    id: null, 
+    teamA: "MahaTech Mahi", 
     teamB: "CricSync",
-    runs: 0,
-    wickets: 0,
-    balls: 0,
-    venue: "LIVE",
+    runs: 0, 
+    wickets: 0, 
+    balls: 0, 
+    venue: "LIVE", 
     leagueName: "Corporate Premier League 2K26"
   });
 
   const [customCommentary, setCustomCommentary] = useState("");
-  
-  // NEW SYSTEM STATE: Tracks the last clicked keypad action ("0", "1", "4", "6", "W")
   const [lastBallResult, setLastBallResult] = useState("");
 
-  // 3. Fetching from Live Database Engine
-  const fetchActiveMatch = async () => {
+  // Fetches live scores, permanent database logs, and available jobs simultaneously
+  const fetchEcosystemData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/active`);
-      if (response.ok) {
-        const data = await response.json();
+      // 1. Fetch current active game metrics
+      const matchRes = await fetch(`${API_BASE_URL}/active`);
+      if (matchRes.ok) {
+        const data = await matchRes.json();
         if (data) {
+          const activeMatchId = data.id;
+          
           setLiveMatch({
-            id: data.id,
-            teamA: data.teamA || data.teamAName || "MahaTech Mahi", 
-            teamB: data.teamB || data.teamBName || "CricSync",
-            runs: data.runsA !== undefined ? data.runsA : 0,       
-            wickets: data.wicketsA !== undefined ? data.wicketsA : 0, 
-            balls: data.ballsA !== undefined ? data.ballsA : 0,     
+            id: activeMatchId,
+            teamA: data.teamA || "MahaTech Mahi",
+            teamB: data.teamB || "CricSync",
+            runs: data.runsA !== undefined ? data.runsA : 0,
+            wickets: data.wicketsA !== undefined ? data.wicketsA : 0,
+            balls: data.ballsA !== undefined ? data.ballsA : 0,
             venue: data.status || "LIVE",
             leagueName: data.leagueName || "Corporate Premier League 2K26"
           });
+
+          // 2. Fetch the historical ball-by-ball timeline array for this active ID
+          if (activeMatchId) {
+            const timelineRes = await fetch(`${API_BASE_URL}/${activeMatchId}/timeline`);
+            if (timelineRes.ok) {
+              const logs = await timelineRes.json();
+              setTimeline(logs);
+            }
+          }
         }
       }
-    } catch (error) {
-      console.error("Error fetching live scorecard:", error);
+
+      // 3. Fetch public dynamic marketplace hiring openings from the database
+      const jobsRes = await fetch(`${API_BASE_URL}/marketplace`);
+      if (jobsRes.ok) {
+        const jobsData = await jobsRes.json();
+        setJobs(jobsData);
+      }
+    } catch (err) {
+      console.error("Failed to sync client with cricsync ecosystem endpoints:", err);
     }
   };
 
+  // Poll the database engine completely every 3 seconds
   useEffect(() => {
-    fetchActiveMatch();
-    const interval = setInterval(fetchActiveMatch, 3000);
+    fetchEcosystemData();
+    const interval = setInterval(fetchEcosystemData, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -64,10 +78,6 @@ export const AppProvider = ({ children }) => {
     const inputLeague = newEvent.league || "Corporate Premier League 2K26";
     const inputVenue = newEvent.venue || "International Stadium Bengaluru";
 
-    const jobFormat = { role: "Official Required", league: inputLeague, venue: inputVenue, pay: "TBD" };
-    setJobs((prevJobs) => [jobFormat, ...prevJobs]);
-
-    // Clear previous dynamic session histories on new match initialization
     setCustomCommentary("");
     setLastBallResult("");
 
@@ -91,40 +101,30 @@ export const AppProvider = ({ children }) => {
         body: JSON.stringify(matchPayload)
       });
       if (response.ok) {
-        const savedMatch = await response.json();
-        setLiveMatch({
-          id: savedMatch.id,
-          teamA: savedMatch.teamA || savedMatch.teamAName || inputTeamA,
-          teamB: savedMatch.teamB || savedMatch.teamBName || inputTeamB,
-          runs: savedMatch.runsA ?? 0,
-          wickets: savedMatch.wicketsA ?? 0,
-          balls: savedMatch.ballsA ?? 0,
-          venue: savedMatch.status || "LIVE",
-          leagueName: savedMatch.leagueName || inputLeague
-        });
+        await fetchEcosystemData(); // Trigger full refresh to align states immediately
       }
     } catch (error) {
       console.error("Failed to persist match parameters live:", error);
     }
   };
 
-  // FIXED: Now accepts ballEvent type parameter ("0", "1", "4", "6", "W") to sync globally 
+  // Pushes changes straight to your updated database logging logic endpoint
   const updateDatabaseScore = async (newRuns, newWickets, newBalls, ballEvent = "") => {
-    if (ballEvent) {
-      setLastBallResult(ballEvent);
-      setCustomCommentary(""); // Wipes custom broadcast overrides to favor the latest ball commentary
-    }
+    setLastBallResult(ballEvent);
+    setCustomCommentary(""); 
 
     try {
-      const response = await fetch(`${API_BASE_URL}/update?runs=${newRuns}&wickets=${newWickets}&balls=${newBalls}`, {
-        method: 'PUT'
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/update-live?id=${liveMatch.id}&runs=${newRuns}&wickets=${newWickets}&balls=${newBalls}&lastBallEvent=${ballEvent}`, 
+        { method: 'PUT' }
+      );
       if (response.ok) {
+        // Clear internal states to pull freshly generated database strings cleanly
         const updatedMatch = await response.json();
         setLiveMatch({
           id: updatedMatch.id,
-          teamA: updatedMatch.teamA || updatedMatch.teamAName || liveMatch.teamA,
-          teamB: updatedMatch.teamB || updatedMatch.teamBName || liveMatch.teamB,
+          teamA: updatedMatch.teamA || liveMatch.teamA,
+          teamB: updatedMatch.teamB || liveMatch.teamB,
           runs: updatedMatch.runsA ?? newRuns,
           wickets: updatedMatch.wicketsA ?? newWickets,
           balls: updatedMatch.ballsA ?? newBalls,
@@ -138,7 +138,7 @@ export const AppProvider = ({ children }) => {
   };
 
   return (
-    <AppContext.Provider value={{ jobs, liveMatch, setLiveMatch, customCommentary, setCustomCommentary, lastBallResult, setLastBallResult, addLeagueEvent, updateDatabaseScore }}>
+    <AppContext.Provider value={{ jobs, liveMatch, timeline, customCommentary, setCustomCommentary, lastBallResult, setLastBallResult, addLeagueEvent, updateDatabaseScore, user }}>
       {children}
     </AppContext.Provider>
   );
