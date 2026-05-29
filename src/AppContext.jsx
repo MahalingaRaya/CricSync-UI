@@ -39,7 +39,7 @@ export const AppProvider = ({ children }) => {
             runs: data.runsA !== undefined ? data.runsA : 0,
             wickets: data.wicketsA !== undefined ? data.wicketsA : 0,
             balls: data.ballsA !== undefined ? data.ballsA : 0,
-            venue: data.venue || "LIVE",
+            venue: data.venue || "LIVE", // FIXED: Changed from data.status to data.venue to match your entity data
             leagueName: data.leagueName || "Corporate Premier League 2K26"
           });
 
@@ -82,7 +82,6 @@ export const AppProvider = ({ children }) => {
     setCustomCommentary("");
     setLastBallResult("");
 
-    // FIXED: Formatted object values to mirror your Java Match.java entity fields perfectly
     const matchPayload = {
       teamA: inputTeamA,
       teamB: inputTeamB,
@@ -94,15 +93,15 @@ export const AppProvider = ({ children }) => {
     };
 
     try {
-      // 1. Send to base URL routing matching standard Spring Boot @PostMapping configurations
-      const response = await fetch(`${API_BASE_URL}`, {
+      // FIXED: Pointing route targeting to /create to match your consolidated MatchController endpoint mapping
+      const response = await fetch(`${API_BASE_URL}/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(matchPayload)
       });
       
       if (response.ok) {
-        // 2. Automatically generate a dynamic hiring role item inside the database marketplace table
+        // Automatically generate a dynamic hiring role item inside the database marketplace table
         const jobPayload = {
           roleRequired: "Kannada Commentator Required",
           leagueName: inputLeague,
@@ -116,7 +115,7 @@ export const AppProvider = ({ children }) => {
           body: JSON.stringify(jobPayload)
         });
 
-        // 3. Re-trigger an immediate data desk calculation to update screens instantly
+        // Re-trigger an immediate calculation to update the Dashboard view screens instantly
         await fetchEcosystemData();
       }
     } catch (error) {
