@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useApp } from './AppContext'; 
 
 export function Dashboard() {
-  // FIXED: Added customCommentary to destructuring so it updates live when you click Post!
-  const { liveMatch, jobs, customCommentary } = useApp();
+  // FIXED: Destructured lastBallResult alongside your other global application states
+  const { liveMatch, jobs, customCommentary, lastBallResult } = useApp();
   const [commentaryLang, setCommentaryLang] = useState("KN"); 
 
   const userProfile = JSON.parse(localStorage.getItem("user")) || { role: "ORGANIZER" };
 
   const getBilingualText = () => {
-    // 1. OVERRIDE LAYER: If an organizer types and posts a custom message, display it immediately!
+    // 1. OVERRIDE LAYER: If an organizer explicitly posts custom text, display it first
     if (customCommentary && customCommentary.trim() !== "") {
       return {
         EN: customCommentary,
@@ -17,7 +17,7 @@ export function Dashboard() {
       };
     }
 
-    // 2. Default: If match hasn't started yet (0.0 Overs), show pre-match introduction
+    // 2. Pre-match condition check if zero balls have been recorded
     if (!liveMatch.balls || liveMatch.balls === 0) {
       return {
         EN: `Welcome live! Teams are stepping onto the field at ${liveMatch.venue || 'the stadium'}. Match about to begin shortly!`,
@@ -25,19 +25,49 @@ export function Dashboard() {
       };
     }
     
-    // 3. Default: If a wicket just fell
-    if (liveMatch.wickets > 0) {
-      return {
-        EN: `OUT! Huge blow for the batting side! Clean bowled, the fielders are celebrating!`,
-        KN: `ಔಟ್! ಬ್ಯಾಟಿಂಗ್ ತಂಡಕ್ಕೆ ಭಾರಿ ಆಘಾತ! ಕ್ಲೀನ್ ಬೌಲ್ಡ್ ಆಗಿ ಬ್ಯಾಟ್ಸ್‌ಮನ್ ಪೆವಿಲಿಯನ್‌ಗೆ ವಾಪಸ್!`
-      };
+    // 3. FLAWLESS RUN-BY-RUN COMMENTARY DICTIONARY EVALUATION
+    switch (lastBallResult) {
+      case "0":
+        return {
+          EN: "Dot ball! Brilliant defensive length, batsman plays it back carefully to the bowler.",
+          KN: "ಡಾಟ್ ಬಾಲ್! ಅತ್ಯುತ್ತಮ ಲೈನ್ ಮತ್ತು ಲೆಂತ್ ಬೌಲಿಂಗ್ ಪ್ರದರ್ಶನ, ರನ್ ಗಳಿಸಲು ಬ್ಯಾಟ್ಸ್‌ಮನ್ ವಿಫಲ."
+        };
+      case "1":
+        return {
+          EN: `Single taken. Soft hands, pushed gently down to long-on to put the batting side on strike.`,
+          KN: "ಒಂದು ರನ್! ಚೆಂಡನ್ನು ಲಾಂಗ್-ಆನ್ ಕಡೆಗೆ ತಳ್ಳಿ ನಿರಾಯಾಸವಾಗಿ ಒಂದು ರನ್ ಕಲೆಹಾಕಿದ ಬ್ಯಾಟ್ಸ್‌ಮನ್."
+        };
+      case "2":
+        return {
+          EN: "Two runs! Excellent running between the wickets, pushed into deep mid-wicket gap.",
+          KN: "ಎರಡು ರನ್! ಉತ್ತಮ ಹೊಂದಾಣಿಕೆಯ ಓಟ, ಮೈದಾನದ ಖಾಲಿ ಜಾಗಕ್ಕೆ ತಳ್ಳಿ ಎರಡು ರನ್ ಕಲೆಹಾಕಿದ್ದಾರೆ."
+        };
+      case "3":
+        return {
+          EN: "Three runs spectacular! Superb placement and hard work by the boundary sweepers to save the four.",
+          KN: "ಮೂರು ರನ್! ಬ್ಯಾಟ್‌ನಿಂದ ಅದ್ಭುತ ಹೊಡೆತ, ಫೀಲ್ಡರ್ ಬೌಂಡರಿ ತಡೆಯುವಷ್ಟರಲ್ಲಿ ಮೂರು ರನ್ ಓಡಿದ್ದಾರೆ."
+        };
+      case "4":
+        return {
+          EN: "FOUR! Gorgeous boundary! Cracking sound off the bat as it speeds away across the grass!",
+          KN: "ನಾಲ್ಕು ರನ್! ಭರ್ಜರಿ ಬೌಂಡರಿ! ಬ್ಯಾಟ್‌ನ ಮಧ್ಯಭಾಗಕ್ಕೆ ತಗುಲಿದ ಚೆಂಡು ಮಿಂಚಿನ ವೇಗದಲ್ಲಿ ಬೌಂಡರಿ ಗೆರೆ ದಾಟಿದೆ!"
+        };
+      case "6":
+        return {
+          EN: "SIX! Absolute monster! High and handsome over deep square leg into the crowd! What a clean strike!",
+          KN: "ಸಿಕ್ಸ್! ಭರ್ಜರಿ ಸಿಕ್ಸರ್! ಗಗನಚುಂಬಿ ಹೊಡೆತ, ಚೆಂಡು ನೇರವಾಗಿ ಕ್ರೀಡಾಂಗಣದ ಗ್ಯಾಲರಿಗೆ ಹೋಗಿ ಬಿದ್ದಿದೆ!"
+        };
+      case "W":
+        return {
+          EN: `OUT! Huge wicket falls! Clean bowled! Massive celebration breakout for the bowling side!`,
+          KN: `ಔಟ್! ಭಾರಿ ಆಘಾತ! ಕ್ಲೀನ್ ಬೌಲ್ಡ್ ಆಗಿ ಬ್ಯಾಟ್ಸ್‌ಮನ್ ಪೆವಿಲಿಯನ್‌ಗೆ ವಾಪಸ್, ಬೌಲಿಂಗ್ ತಂಡದಲ್ಲಿ ಸಂಭ್ರಮ!`
+        };
+      default:
+        return {
+          EN: "Steady progression. Keeping the scoreboard moving forward systematically.",
+          KN: "ಸ್ಥಿರ ಪ್ರದರ್ಶನ, ರನ್ ಗಳಿಸುವ ಮೂಲಕ ಸ್ಕೋರ್ ಕಾರ್ಡ್ ಮುನ್ನಡೆಯುತ್ತಿದೆ."
+        };
     }
-    
-    // 4. Default: Standard ball delivery update
-    return {
-      EN: `Good delivery, pushed safely to deep mid-wicket for a steady single. Score keeps moving.`,
-      KN: `ಅದ್ಭುತ ಪ್ರದರ್ಶನ, ಸಿಂಗಲ್ ರನ್ ಗಳಿಸುವ ಮೂಲಕ ಸ್ಕೋರ್ ಕಾರ್ಡ್ ಮುನ್ನಡೆಯುತ್ತಿದೆ.`
-    };
   };
 
   const currentCommentary = getBilingualText();
