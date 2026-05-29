@@ -3,7 +3,7 @@ import { Target, Mic } from 'lucide-react';
 import { useApp } from './AppContext'; // Secure Context Link
 
 export const LiveEngine = () => {
-  // FIXED: Destructured setCustomCommentary to connect this text field to the global Dashboard feed!
+  // Destructure database synchronized states and functions from Context
   const { liveMatch, setLiveMatch, updateDatabaseScore, setCustomCommentary } = useApp(); 
   const [feed, setFeed] = useState([]);
   const [commentBox, setCommentBox] = useState("");
@@ -13,17 +13,22 @@ export const LiveEngine = () => {
     const updatedBalls = liveMatch.balls + 1;
     const overStr = `${Math.floor(updatedBalls / 6)}.${updatedBalls % 6}`;
     
-    // Instantly update the local UI screen state smoothly
+    // 1. Instantly update the local UI screen state smoothly
     setLiveMatch({
       ...liveMatch,
       runs: updatedRuns,
       balls: updatedBalls
     });
 
-    setFeed([{ type: 'score', over: overStr, text: `${liveMatch.teamA} scores ${runVal} run(s).` }, ...feed]);
+    let actionText = `${liveMatch.teamA} scores ${runVal} run(s).`;
+    if (runVal === 0) actionText = `Dot ball. Excellent delivery.`;
+    if (runVal === 4) actionText = `CRACKING FOUR! Splendid boundary.`;
+    if (runVal === 6) actionText = `MASSIVE SIX! Clear over the ropes.`;
+
+    setFeed([{ type: 'score', over: overStr, text: actionText }, ...feed]);
     
-    // Pushes current exact metrics to Spring Boot API immediately
-    updateDatabaseScore(updatedRuns, liveMatch.wickets, updatedBalls);
+    // 2. FIXED: Now explicitly forwards the run value string as the 4th parameter to update dynamic commentary
+    updateDatabaseScore(updatedRuns, liveMatch.wickets, updatedBalls, runVal.toString());
   };
 
   const handleWicket = () => {
@@ -31,7 +36,7 @@ export const LiveEngine = () => {
     const updatedBalls = liveMatch.balls + 1;
     const overStr = `${Math.floor(updatedBalls / 6)}.${updatedBalls % 6}`;
 
-    // Instantly update the local UI screen state smoothly
+    // 1. Instantly update the local UI screen state smoothly
     setLiveMatch({
       ...liveMatch,
       wickets: updatedWickets,
@@ -40,8 +45,8 @@ export const LiveEngine = () => {
 
     setFeed([{ type: 'wicket', over: overStr, text: `OUT! Huge wicket falls for ${liveMatch.teamA}.` }, ...feed]);
     
-    // Uses the true current runs value instead of relying on asynchronous state lag
-    updateDatabaseScore(liveMatch.runs, updatedWickets, updatedBalls);
+    // 2. FIXED: Explicitly passes "W" to trigger a perfect wicket commentary statement on the dashboard
+    updateDatabaseScore(liveMatch.runs, updatedWickets, updatedBalls, "W");
   };
 
   const handleCommentary = () => {
@@ -51,7 +56,7 @@ export const LiveEngine = () => {
     // 1. Adds locally to the keypad's sidebar preview list
     setFeed([{ type: 'commentary', over: overStr, text: commentBox }, ...feed]);
     
-    // 2. FIXED: Dispatches your typed input text straight to the global AppContext state store!
+    // 2. Dispatches your typed input text straight to the global AppContext state store!
     setCustomCommentary(commentBox);
     
     setCommentBox(""); 
