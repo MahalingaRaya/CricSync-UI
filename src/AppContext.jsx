@@ -3,7 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const AppContext = createContext();
 const API_BASE_URL = "https://cricsync-engine.onrender.com/api/matches"; 
 
-public const AppProvider = ({ children }) => {
+export const AppProvider = ({ children }) => {
   const [jobs, setJobs] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [user, setUser] = useState({ username: "MahaTech Mahi", role: "ORGANIZER" });
