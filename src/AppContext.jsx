@@ -1,7 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AppContext = createContext();
-const API_BASE_URL = "https://cricsync-engine.onrender.com/api/matches"; 
+// Adjusted base URL to point to the root API path for cleaner endpoint routing
+const API_BASE_URL = "https://cricsync-engine.onrender.com/api"; 
 
 export const AppProvider = ({ children }) => {
   const [user, setUser] = useState({ username: "MahaTech Mahi", role: "ORGANIZER" });
@@ -20,7 +21,7 @@ export const AppProvider = ({ children }) => {
     leagueName: "Corporate Premier League 2K26"
   });
 
-  // 2. HARDCODED FALLBACK COMMENTARY LOGS (Ensures feed displays instantly)
+  // 2. HARDCODED FALLBACK COMMENTARY LOGS 
   const [timeline, setTimeline] = useState([
     {
       id: 3,
@@ -42,7 +43,7 @@ export const AppProvider = ({ children }) => {
     }
   ]);
 
-  // 3. HARDCODED FALLBACK JOB OPENINGS (Ensures marketplace container displays instantly)
+  // 3. HARDCODED FALLBACK JOB OPENINGS 
   const [jobs, setJobs] = useState([
     {
       id: 1,
@@ -62,7 +63,7 @@ export const AppProvider = ({ children }) => {
 
   const fetchEcosystemData = async () => {
     try {
-      const matchRes = await fetch(`${API_BASE_URL}/active`);
+      const matchRes = await fetch(`${API_BASE_URL}/matches/1`); // Fetching Match ID 1 specifically
       if (matchRes.ok) {
         const data = await matchRes.json();
         if (data) {
@@ -70,23 +71,23 @@ export const AppProvider = ({ children }) => {
             id: data.id || 1,
             teamA: data.teamA || "MahaTech Mahi",
             teamB: data.teamB || "CricSync",
-            runs: data.runs !== undefined ? data.runs : 84,
-            wickets: data.wickets !== undefined ? data.wickets : 3,
-            balls: data.balls !== undefined ? data.balls : 45,
+            runs: data.runsA !== undefined ? data.runsA : 84, // Mapping to your backend's runsA
+            wickets: data.wicketsA !== undefined ? data.wicketsA : 3,
+            balls: data.ballsA !== undefined ? data.ballsA : 45,
             venue: data.venue || "Chinnaswamy Stadium Bengaluru",
             leagueName: data.leagueName || "Corporate Premier League 2K26"
           });
         }
       }
 
-      // Safe fallbacks prevent empty database responses from wiping out your screen sections
-      const timelineRes = await fetch(`${API_BASE_URL}/1/timeline`);
+      // Safe fallbacks for timelines and jobs
+      const timelineRes = await fetch(`${API_BASE_URL}/matches/1/timeline`);
       if (timelineRes.ok) {
         const logs = await timelineRes.json();
         if (logs && logs.length > 0) setTimeline(logs);
       }
 
-      const jobsRes = await fetch(`${API_BASE_URL}/marketplace`);
+      const jobsRes = await fetch(`${API_BASE_URL}/matches/marketplace`);
       if (jobsRes.ok) {
         const jobsData = await jobsRes.json();
         if (jobsData && jobsData.length > 0) setJobs(jobsData);
@@ -98,12 +99,11 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     fetchEcosystemData();
-    const interval = setInterval(fetchEcosystemData, 3000);
+    const interval = setInterval(fetchEcosystemData, 3000); // Polls every 3 seconds
     return () => clearInterval(interval);
   }, []);
 
   const addLeagueEvent = async (newEvent) => {
-    // Optimistic UI updates keep your phone layout active instantly
     setLiveMatch({
       id: 1,
       teamA: newEvent.teamA || "MahaTech Mahi",
@@ -116,15 +116,49 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  // --- THE BRIDGE TO YOUR SPRING BOOT BACKEND ---
   const updateDatabaseScore = async (newRuns, newWickets, newBalls, ballEvent = "") => {
+    
+    // 1. Instantly update UI (Optimistic Rendering)
     setLastBallResult(ballEvent);
-    // Directly modifies state locally to keep your dashboard interactive on tap events
     setLiveMatch(prev => ({
       ...prev,
       runs: newRuns,
       wickets: newWickets,
       balls: newBalls
     }));
+
+    // 2. Calculate over and ball numbers for the database
+    const isWicket = ballEvent === 'W';
+    const runsToRecord = (isWicket || isNaN(ballEvent)) ? 0 : parseInt(ballEvent);
+    const currentOver = Math.floor((newBalls - 1) / 6);
+    const currentBallInOver = ((newBalls - 1) % 6) + 1;
+
+    // 3. Fire the POST request to your live Render engine
+    try {
+      await fetch(`${API_BASE_URL}/ball-by-ball`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          match: { id: liveMatch.id },
+          inningsNumber: 1, // Defaults to 1st innings for now
+          overNumber: currentOver,
+          ballNumber: currentBallInOver,
+          runsScored: runsToRecord,
+          extraRuns: 0,
+          isWicket: isWicket,
+          commentaryText: customCommentary || (isWicket ? "WICKET!" : `${runsToRecord} runs scored.`)
+        })
+      });
+      
+      // Clear custom commentary input box after successful send
+      setCustomCommentary("");
+      
+    } catch (error) {
+      console.error("Failed to sync live ball to database:", error);
+    }
   };
 
   return (
