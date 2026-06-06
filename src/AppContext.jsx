@@ -8,64 +8,51 @@ export const AppProvider = ({ children }) => {
   const [customCommentary, setCustomCommentary] = useState("");
   const [lastBallResult, setLastBallResult] = useState("");
   
-  // STRIPPED FAKE DATA - Forces the UI to wait for the real database
+  // Clean initial state
   const [liveMatch, setLiveMatch] = useState({
     id: 1, 
-    teamA: "Connecting to Engine...", 
+    teamA: "Fetching...", 
     teamB: "Please Wait",
     runs: 0, 
     wickets: 0, 
     balls: 0, 
-    venue: "Fetching from cloud...", 
-    leagueName: "System Booting..."
+    venue: "Chinnaswamy Stadium", 
+    leagueName: "Corporate Premier League"
   });
 
   const [timeline, setTimeline] = useState([]);
   const [jobs, setJobs] = useState([]);
 
-  const fetchEcosystemData = async () => {
-    try {
-      const matchRes = await fetch(`${API_BASE_URL}/matches/1`);
-      if (matchRes.ok) {
-        const data = await matchRes.json();
-        if (data) {
-          // This will overwrite the "Connecting to Engine..." text with RCB vs CSK
+  // FETCH EXACTLY ONCE ON LOAD (No more auto-refresh loops)
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const matchRes = await fetch(`${API_BASE_URL}/matches/1`);
+        if (matchRes.ok) {
+          const data = await matchRes.json();
           setLiveMatch({
             id: data.id || 1,
             teamA: data.teamA,
             teamB: data.teamB,
-            runs: data.runsA !== undefined ? data.runsA : 0,
-            wickets: data.wicketsA !== undefined ? data.wicketsA : 0,
-            balls: data.ballsA !== undefined ? data.ballsA : 0,
+            runs: data.runsA || 0,
+            wickets: data.wicketsA || 0,
+            balls: data.ballsA || 0,
             venue: "Chinnaswamy Stadium",
-            leagueName: "CricSync Pro League"
+            leagueName: "Corporate Premier League"
           });
         }
+      } catch (err) {
+        console.error("Backend sleeping. Using local state.");
       }
-
-      const timelineRes = await fetch(`${API_BASE_URL}/matches/1/timeline`);
-      if (timelineRes.ok) {
-        const logs = await timelineRes.json();
-        if (logs && logs.length > 0) setTimeline(logs);
-      }
-    } catch (err) {
-      console.error("Waiting for backend to wake up...");
-    }
-  };
-
-  useEffect(() => {
-    fetchEcosystemData();
-    // Polls the database every 4 seconds
-    const interval = setInterval(fetchEcosystemData, 4000); 
-    return () => clearInterval(interval);
-  }, []);
-
-  const addLeagueEvent = async (newEvent) => {};
+    };
+    
+    fetchInitialData();
+  }, []); // The empty array ensures this only runs once!
 
   const updateDatabaseScore = async (newRuns, newWickets, newBalls, ballEvent = "") => {
     setLastBallResult(ballEvent);
     
-    // Instant UI Update
+    // 1. INSTANT UI UPDATE - This makes the app feel lightning fast
     setLiveMatch(prev => ({
       ...prev,
       runs: newRuns,
@@ -78,9 +65,9 @@ export const AppProvider = ({ children }) => {
     const currentOver = Math.floor((newBalls - 1) / 6);
     const currentBallInOver = ((newBalls - 1) % 6) + 1;
 
-    // Push to backend
+    // 2. SILENT BACKEND SYNC - Fires data to database without freezing the screen
     try {
-      await fetch(`${API_BASE_URL}/ball-by-ball`, {
+      fetch(`${API_BASE_URL}/ball-by-ball`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,9 +83,11 @@ export const AppProvider = ({ children }) => {
       });
       setCustomCommentary("");
     } catch (error) {
-      console.error("Failed to sync.", error);
+      console.error("Silent sync failed, but UI still works.", error);
     }
   };
+
+  const addLeagueEvent = async (newEvent) => {};
 
   return (
     <AppContext.Provider value={{ jobs, liveMatch, timeline, customCommentary, setCustomCommentary, lastBallResult, setLastBallResult, addLeagueEvent, updateDatabaseScore, user }}>
