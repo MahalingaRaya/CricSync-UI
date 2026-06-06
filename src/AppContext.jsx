@@ -8,46 +8,34 @@ export const AppProvider = ({ children }) => {
   const [customCommentary, setCustomCommentary] = useState("");
   const [lastBallResult, setLastBallResult] = useState("");
   
-  // 1. RESTORED INITIAL STATE: UI looks perfect instantly
+  // 1. DYNAMIC INITIAL STATE: Reads the user's specific match from their phone
   const [liveMatch, setLiveMatch] = useState({
-    id: 1, 
-    teamA: "RCB", 
-    teamB: "CSK",
+    id: localStorage.getItem('activeMatchId') || 1, 
+    teamA: "Fetching...", 
+    teamB: "Please Wait",
     runs: 0, 
     wickets: 0, 
     balls: 0, 
     venue: "Chinnaswamy Stadium", 
-    leagueName: "CricSync Pro League"
+    leagueName: "Local League"
   });
 
-  const [timeline, setTimeline] = useState([
-    {
-      id: 1,
-      overDisplay: "0.0",
-      commentaryEn: "Welcome to the live broadcast! Players are taking the field.",
-      commentaryKn: "ನೇರ ಪ್ರಸಾರಕ್ಕೆ ಸುಸ್ವಾಗತ! ಆಟಗಾರರು ಮೈದಾನಕ್ಕೆ ಪ್ರವೇಶಿಸುತ್ತಿದ್ದಾರೆ."
-    }
-  ]);
+  const [timeline, setTimeline] = useState([]);
+  const [jobs, setJobs] = useState([]);
 
-  const [jobs, setJobs] = useState([
-    {
-      id: 1,
-      roleRequired: "Kannada Commentator",
-      leagueName: "Corporate Premier League 2K26",
-      venue: "Bengaluru",
-      payPerMatch: "3,500/Match"
-    }
-  ]);
-
-  // Fetch backend data once quietly in the background
+  // 2. FETCHES THE SPECIFIC MATCH FROM SPRING BOOT
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const matchRes = await fetch(`${API_BASE_URL}/matches/1`);
+        const activeId = localStorage.getItem('activeMatchId') || 1;
+        const matchRes = await fetch(`${API_BASE_URL}/matches/${activeId}`);
         if (matchRes.ok) {
           const data = await matchRes.json();
           setLiveMatch(prev => ({
             ...prev,
+            id: data.id,
+            teamA: data.teamA,
+            teamB: data.teamB,
             runs: data.runsA || prev.runs,
             wickets: data.wicketsA || prev.wickets,
             balls: data.ballsA || prev.balls
@@ -63,7 +51,7 @@ export const AppProvider = ({ children }) => {
   const updateDatabaseScore = async (newRuns, newWickets, newBalls, ballEvent = "") => {
     setLastBallResult(ballEvent);
     
-    // Updates UI Scorecard Instantly
+    // Instant UI Update
     setLiveMatch(prev => ({
       ...prev,
       runs: newRuns,
@@ -71,7 +59,6 @@ export const AppProvider = ({ children }) => {
       balls: newBalls
     }));
 
-    // Updates Timeline Commentary Instantly
     const overStr = `${Math.floor((newBalls - 1) / 6)}.${((newBalls - 1) % 6) + 1}`;
     const actionText = customCommentary || (ballEvent === 'W' ? "WICKET! Huge breakthrough!" : `${ballEvent} runs scored.`);
     
@@ -79,23 +66,23 @@ export const AppProvider = ({ children }) => {
       id: Date.now(),
       overDisplay: overStr,
       commentaryEn: actionText,
-      commentaryKn: "" // Can expand bilingual later
+      commentaryKn: "" 
     }, ...prev]);
 
-    // Silently pushes to Spring Boot without interrupting the UI
+    // 3. UPDATES THE SPECIFIC MATCH IN THE CLOUD
     try {
       fetch(`${API_BASE_URL}/matches/update-live`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: 1, 
+          id: liveMatch.id, // Uses the dynamic ID here!
           runsA: newRuns,
           wicketsA: newWickets,
           ballsA: newBalls
         })
       });
     } catch (error) {
-      // Ignored: UI still works perfectly for the user/recruiter
+      // Ignored for seamless UI
     }
     
     setCustomCommentary("");
@@ -105,17 +92,9 @@ export const AppProvider = ({ children }) => {
 
   return (
     <AppContext.Provider value={{ 
-      jobs, 
-      liveMatch, 
-      setLiveMatch, // THE MISSING PIECE THAT BROKE YOUR APP IS NOW FIXED
-      timeline, 
-      customCommentary, 
-      setCustomCommentary, 
-      lastBallResult, 
-      setLastBallResult, 
-      addLeagueEvent, 
-      updateDatabaseScore, 
-      user 
+      jobs, liveMatch, setLiveMatch, timeline, customCommentary, 
+      setCustomCommentary, lastBallResult, setLastBallResult, 
+      addLeagueEvent, updateDatabaseScore, user 
     }}>
       {children}
     </AppContext.Provider>
