@@ -5,6 +5,7 @@ import { Navigation } from './Navigation';
 import { Home } from './Home';
 import { CreateMatch } from './CreateMatch';
 import { MatchCenter } from './MatchCenter';
+import { Scorecard } from './Scorecard'; // <-- Added the import here
 
 // Temporary placeholders for upcoming features
 const Placeholder = ({ title }) => (
@@ -23,6 +24,9 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/create-match" element={<CreateMatch />} />
           <Route path="/match-center" element={<MatchCenter />} />
+          
+          {/* Spectator Mode Route */}
+          <Route path="/scorecard/:id" element={<Scorecard />} /> 
           
           {/* Upcoming Modules */}
           <Route path="/teams" element={<Placeholder title="Team Management" />} />
