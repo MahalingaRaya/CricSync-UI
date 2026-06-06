@@ -8,22 +8,21 @@ export const AppProvider = ({ children }) => {
   const [customCommentary, setCustomCommentary] = useState("");
   const [lastBallResult, setLastBallResult] = useState("");
   
-  // 1. DYNAMIC INITIAL STATE: Reads the user's specific match from their phone
+  // Track Innings, Target, and Max Overs
   const [liveMatch, setLiveMatch] = useState({
     id: localStorage.getItem('activeMatchId') || 1, 
+    maxOvers: parseInt(localStorage.getItem('matchMaxOvers')) || 2,
+    innings: 1,
+    target: 0,
     teamA: "Fetching...", 
     teamB: "Please Wait",
-    runs: 0, 
-    wickets: 0, 
-    balls: 0, 
-    venue: "Chinnaswamy Stadium", 
+    runs: 0, wickets: 0, balls: 0, 
     leagueName: "Local League"
   });
 
   const [timeline, setTimeline] = useState([]);
   const [jobs, setJobs] = useState([]);
 
-  // 2. FETCHES THE SPECIFIC MATCH FROM SPRING BOOT
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -34,6 +33,7 @@ export const AppProvider = ({ children }) => {
           setLiveMatch(prev => ({
             ...prev,
             id: data.id,
+            maxOvers: data.maxOvers || prev.maxOvers,
             teamA: data.teamA,
             teamB: data.teamB,
             runs: data.runsA || prev.runs,
@@ -42,7 +42,7 @@ export const AppProvider = ({ children }) => {
           }));
         }
       } catch (err) {
-        console.error("Backend sleeping, relying on flawless local UI state.");
+        console.error("Backend sleeping.");
       }
     };
     fetchInitialData();
@@ -51,50 +51,46 @@ export const AppProvider = ({ children }) => {
   const updateDatabaseScore = async (newRuns, newWickets, newBalls, ballEvent = "") => {
     setLastBallResult(ballEvent);
     
-    // Instant UI Update
-    setLiveMatch(prev => ({
-      ...prev,
-      runs: newRuns,
-      wickets: newWickets,
-      balls: newBalls
-    }));
+    setLiveMatch(prev => ({ ...prev, runs: newRuns, wickets: newWickets, balls: newBalls }));
 
     const overStr = `${Math.floor((newBalls - 1) / 6)}.${((newBalls - 1) % 6) + 1}`;
     const actionText = customCommentary || (ballEvent === 'W' ? "WICKET! Huge breakthrough!" : `${ballEvent} runs scored.`);
     
-    setTimeline(prev => [{
-      id: Date.now(),
-      overDisplay: overStr,
-      commentaryEn: actionText,
-      commentaryKn: "" 
-    }, ...prev]);
+    setTimeline(prev => [{ id: Date.now(), overDisplay: overStr, commentaryEn: actionText, commentaryKn: "" }, ...prev]);
 
-    // 3. UPDATES THE SPECIFIC MATCH IN THE CLOUD
+    // Send payload based on which inning is active
+    const updatePayload = liveMatch.innings === 1 
+      ? { id: liveMatch.id, runsA: newRuns, wicketsA: newWickets, ballsA: newBalls }
+      : { id: liveMatch.id, runsB: newRuns, wicketsB: newWickets, ballsB: newBalls };
+
     try {
       fetch(`${API_BASE_URL}/matches/update-live`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: liveMatch.id, // Uses the dynamic ID here!
-          runsA: newRuns,
-          wicketsA: newWickets,
-          ballsA: newBalls
-        })
+        body: JSON.stringify(updatePayload)
       });
-    } catch (error) {
-      // Ignored for seamless UI
-    }
-    
+    } catch (error) {}
     setCustomCommentary("");
   };
 
-  const addLeagueEvent = async (newEvent) => {};
+  // NEW: Flips the match to Innings 2
+  const startSecondInnings = () => {
+    setLiveMatch(prev => ({
+      ...prev,
+      innings: 2,
+      target: prev.runs + 1,
+      runs: 0,
+      wickets: 0,
+      balls: 0
+    }));
+    setTimeline([{ id: Date.now(), overDisplay: "0.0", commentaryEn: "Innings Break. Run chase is about to begin!", commentaryKn: "" }]);
+  };
 
   return (
     <AppContext.Provider value={{ 
       jobs, liveMatch, setLiveMatch, timeline, customCommentary, 
       setCustomCommentary, lastBallResult, setLastBallResult, 
-      addLeagueEvent, updateDatabaseScore, user 
+      updateDatabaseScore, startSecondInnings, user 
     }}>
       {children}
     </AppContext.Provider>
