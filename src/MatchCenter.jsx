@@ -29,7 +29,7 @@ export const MatchCenter = () => {
     <div className="p-4 max-w-7xl mx-auto mb-20 space-y-6 bg-black min-h-screen text-white font-sans">
       
       {/* 1. TOP SCORECARD (Ported from Dashboard) */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-xl mx-auto mb-5 shadow-2xl">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-xl mx-auto mb-2 shadow-2xl">
         <div className="flex justify-between items-center mb-4">
           <span className="text-red-500 font-bold flex items-center gap-1.5 text-xs tracking-wider uppercase animate-pulse">
             ● LIVE MATCH CENTER
@@ -59,6 +59,20 @@ export const MatchCenter = () => {
             <p className="text-zinc-500 text-xs font-semibold mt-0.5">Yet to bat</p>
           </div>
         </div>
+      </div>
+
+      {/* NEW: SPECTATOR LINK BUTTON */}
+      <div className="max-w-xl mx-auto flex justify-end mb-6 pr-2">
+        <button 
+          onClick={() => {
+            const url = `${window.location.origin}/scorecard/${liveMatch.id}`;
+            navigator.clipboard.writeText(url);
+            alert("Spectator Link Copied! Share with friends on WhatsApp.");
+          }}
+          className="text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-4 py-2 rounded-lg hover:bg-cyan-500/20 transition active:scale-95 shadow-lg"
+        >
+          🔗 Copy Spectator Link
+        </button>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
