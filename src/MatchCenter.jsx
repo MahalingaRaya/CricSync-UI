@@ -9,6 +9,8 @@ export const MatchCenter = () => {
   // UI States
   const [isPublishing, setIsPublishing] = useState(false);
   const [showInstantScorecard, setShowInstantScorecard] = useState(false);
+  // 🔥 NEW: Commentary Language Toggle State
+  const [commentaryLang, setCommentaryLang] = useState('EN');
 
   const isOverLimit = liveMatch.balls >= liveMatch.maxOvers * 6;
   const isAllOut = liveMatch.wickets >= 10;
@@ -17,26 +19,33 @@ export const MatchCenter = () => {
   const isMatchOver = liveMatch.innings === 2 && (isOverLimit || isAllOut || isTargetReached);
   const needsPlayerSelection = !striker || !nonStriker || !currentBowler;
 
-  const handleBatRun = (runs) => processDelivery({ batterRuns: runs, extraRuns: 0, isLegal: true, physicalRuns: runs, isWicket: false, eventText: `${runs} off the bat` });
-  const handleWicket = () => { processDelivery({ batterRuns: 0, extraRuns: 0, isLegal: true, physicalRuns: 0, isWicket: true, eventText: "WICKET! Clean Bowled!" }); setStriker(null); };
+  // 🔥 NEW: Bilingual Generators matching your Spring Boot backend!
+  const getBatRunText = (runs) => {
+    if (runs === 6) return { en: "SIX! Absolute monster hit!", kn: "ಭರ್ಜರಿ ಸಿಕ್ಸರ್! ಗಗನಚುಂಬಿ ಹೊಡೆತ!" };
+    if (runs === 4) return { en: "FOUR! Beautifully timed drive!", kn: "ನಾಲ್ಕು ರನ್! ಭರ್ಜರಿ ಬೌಂಡರಿ!" };
+    if (runs === 0) return { en: "Dot ball. Excellent delivery.", kn: "ಡಾಟ್ ಬಾಲ್! ಅತ್ಯುತ್ತಮ ಬೌಲಿಂಗ್." };
+    return { en: `${runs} off the bat`, kn: `ಬ್ಯಾಟ್‌ನಿಂದ ${runs} ರನ್` };
+  };
+
+  const handleBatRun = (runs) => processDelivery({ batterRuns: runs, extraRuns: 0, isLegal: true, physicalRuns: runs, isWicket: false, eventText: getBatRunText(runs) });
+  
+  const handleWicket = () => { 
+    processDelivery({ batterRuns: 0, extraRuns: 0, isLegal: true, physicalRuns: 0, isWicket: true, eventText: { en: "OUT! The woodwork is absolutely shattered!", kn: "ಔಟ್! ಭಾರಿ ಆಘಾತ! ಕ್ಲೀನ್ ಬೌಲ್ಡ್!" } }); 
+    setStriker(null); 
+  };
 
   const executeExtra = (physicalRunsRun) => {
-    if (extraMode === 'WD') processDelivery({ batterRuns: 0, extraRuns: 1 + physicalRunsRun, isLegal: false, physicalRuns: physicalRunsRun, eventText: `Wide + ${physicalRunsRun} runs` });
-    else if (extraMode === 'NB') processDelivery({ batterRuns: physicalRunsRun, extraRuns: 1, isLegal: false, physicalRuns: physicalRunsRun, eventText: `No Ball + ${physicalRunsRun} off bat` });
-    else if (extraMode === 'B') processDelivery({ batterRuns: 0, extraRuns: physicalRunsRun, isLegal: true, physicalRuns: physicalRunsRun, isByeOrLegBye: true, eventText: `${physicalRunsRun} Byes` });
-    else if (extraMode === 'LB') processDelivery({ batterRuns: 0, extraRuns: physicalRunsRun, isLegal: true, physicalRuns: physicalRunsRun, isByeOrLegBye: true, eventText: `${physicalRunsRun} Leg Byes` });
+    if (extraMode === 'WD') processDelivery({ batterRuns: 0, extraRuns: 1 + physicalRunsRun, isLegal: false, physicalRuns: physicalRunsRun, eventText: { en: `Wide + ${physicalRunsRun} runs`, kn: `ವೈಡ್ + ${physicalRunsRun} ರನ್` }});
+    else if (extraMode === 'NB') processDelivery({ batterRuns: physicalRunsRun, extraRuns: 1, isLegal: false, physicalRuns: physicalRunsRun, eventText: { en: `No Ball + ${physicalRunsRun} off bat`, kn: `ನೋ ಬಾಲ್ + ${physicalRunsRun} ರನ್` }});
+    else if (extraMode === 'B') processDelivery({ batterRuns: 0, extraRuns: physicalRunsRun, isLegal: true, physicalRuns: physicalRunsRun, isByeOrLegBye: true, eventText: { en: `${physicalRunsRun} Byes`, kn: `${physicalRunsRun} ಬೈಸ್` }});
+    else if (extraMode === 'LB') processDelivery({ batterRuns: 0, extraRuns: physicalRunsRun, isLegal: true, physicalRuns: physicalRunsRun, isByeOrLegBye: true, eventText: { en: `${physicalRunsRun} Leg Byes`, kn: `${physicalRunsRun} ಲೆಗ್ ಬೈಸ್` }});
     setExtraMode(null); 
   };
 
-  // 🔥 Silently syncs to cloud and copies link
   const publishAndCopyLink = async () => {
     setIsPublishing(true);
     try {
-      await fetch('https://cricsync-engine.onrender.com/api/match-players/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(allPlayers)
-      });
+      await fetch('https://cricsync-engine.onrender.com/api/match-players/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allPlayers) });
       const url = `${window.location.origin}/scorecard/${liveMatch.id}`;
       navigator.clipboard.writeText(url);
       alert("✅ Scorecard saved to Cloud! Public Link copied to clipboard.");
@@ -46,42 +55,32 @@ export const MatchCenter = () => {
     setIsPublishing(false);
   };
 
-  // Instant Local Scorecard View
   if (showInstantScorecard) {
     const teamAStats = allPlayers.filter(p => p.teamName === liveMatch.teamA);
     const teamBStats = allPlayers.filter(p => p.teamName === liveMatch.teamB);
-    
     return (
       <div className="p-4 max-w-3xl mx-auto space-y-6 text-white font-sans pt-10">
         <button onClick={() => setShowInstantScorecard(false)} className="text-cyan-400 font-bold flex items-center gap-2 mb-6 hover:text-cyan-300"><ChevronLeft size={20}/> Back to Match Center</button>
         <h2 className="text-3xl font-black mb-4">Instant Scorecard</h2>
-        
         <div className="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 space-y-4">
           <h3 className="text-lg font-black text-emerald-400 border-b border-zinc-800 pb-2">{liveMatch.teamA} Batting</h3>
-          {teamAStats.filter(p => p.ballsFaced > 0 || p.runsScored > 0).map(p => (
-            <div key={p.id} className="flex justify-between text-sm"><span className="font-bold">{p.playerName}</span><span className="text-zinc-400">{p.runsScored} ({p.ballsFaced})</span></div>
-          ))}
+          {teamAStats.filter(p => p.ballsFaced > 0 || p.runsScored > 0).map(p => (<div key={p.id} className="flex justify-between text-sm"><span className="font-bold">{p.playerName}</span><span className="text-zinc-400">{p.runsScored} ({p.ballsFaced})</span></div>))}
           <h3 className="text-lg font-black text-cyan-400 border-b border-zinc-800 pb-2 pt-4">{liveMatch.teamB} Bowling</h3>
-          {teamBStats.filter(p => p.oversBowled > 0).map(p => (
-            <div key={p.id} className="flex justify-between text-sm"><span className="font-bold">{p.playerName}</span><span className="text-zinc-400">{p.oversBowled.toFixed(1)} Overs - {p.wicketsTaken} Wkts</span></div>
-          ))}
+          {teamBStats.filter(p => p.oversBowled > 0).map(p => (<div key={p.id} className="flex justify-between text-sm"><span className="font-bold">{p.playerName}</span><span className="text-zinc-400">{p.oversBowled.toFixed(1)} Overs - {p.wicketsTaken} Wkts</span></div>))}
         </div>
-
-        <button onClick={publishAndCopyLink} disabled={isPublishing} className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-black text-lg py-4 rounded-xl flex justify-center items-center gap-2 transition active:scale-95">
-          <Share2 size={20} /> {isPublishing ? "Syncing..." : "Sync to Cloud & Copy Public Link"}
-        </button>
+        <button onClick={publishAndCopyLink} disabled={isPublishing} className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-black text-lg py-4 rounded-xl flex justify-center items-center gap-2 transition active:scale-95"><Share2 size={20} /> {isPublishing ? "Syncing..." : "Sync to Cloud & Copy Public Link"}</button>
       </div>
     );
   }
 
   return (
-    <div className="p-4 max-w-7xl mx-auto mb-20 space-y-6 bg-black min-h-screen text-white font-sans">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-xl mx-auto mb-2 shadow-2xl relative overflow-hidden">
+    <div className="p-4 max-w-7xl mx-auto mb-20 space-y-6 bg-[#050505] min-h-screen text-white font-sans">
+      <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-6 max-w-xl mx-auto mb-2 shadow-2xl relative overflow-hidden">
         {liveMatch.innings === 2 && <div className="absolute top-0 left-0 right-0 bg-emerald-500 text-black text-center text-[10px] font-black tracking-widest py-1 uppercase">Target: {liveMatch.target} • Need {liveMatch.target - liveMatch.runs}</div>}
         <div className="flex justify-between items-center mb-4"><span className="text-red-500 font-bold flex items-center gap-1.5 text-xs tracking-wider uppercase animate-pulse">● LIVE</span><span className="text-zinc-400 text-xs font-black tracking-wide bg-zinc-800 px-3 py-1 rounded-xl">📍 {liveMatch.maxOvers} Overs</span></div>
         <div className="flex justify-between items-center my-6">
           <div className="flex-1"><h2 className={`text-xl font-black ${liveMatch.innings === 1 ? 'text-white' : 'text-zinc-500'}`}>{liveMatch.innings === 1 ? liveMatch.teamA : liveMatch.teamB}</h2></div>
-          <div className="text-center bg-zinc-950 px-5 py-3 rounded-2xl border border-zinc-800 min-w-[100px]"><div className="text-emerald-400 text-3xl font-black tracking-tighter">{liveMatch.runs}/{liveMatch.wickets}</div><p className="text-zinc-400 text-[11px] font-bold mt-0.5">{Math.floor(liveMatch.balls / 6)}.{liveMatch.balls % 6} Overs</p></div>
+          <div className="text-center bg-black/50 px-5 py-3 rounded-2xl border border-zinc-800 min-w-[100px]"><div className="text-emerald-400 text-3xl font-black tracking-tighter">{liveMatch.runs}/{liveMatch.wickets}</div><p className="text-zinc-400 text-[11px] font-bold mt-0.5">{Math.floor(liveMatch.balls / 6)}.{liveMatch.balls % 6} Overs</p></div>
           <div className="flex-1 text-right"><h2 className={`text-xl font-black ${liveMatch.innings === 1 ? 'text-zinc-500' : 'text-white'}`}>{liveMatch.innings === 1 ? liveMatch.teamB : liveMatch.teamA}</h2></div>
         </div>
 
@@ -101,21 +100,19 @@ export const MatchCenter = () => {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-6">
-        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl flex flex-col justify-center relative">
+        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 p-6 rounded-3xl flex flex-col justify-center relative">
           <button onClick={undoLastAction} disabled={history.length === 0} className="absolute top-6 right-6 flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-zinc-300 px-3 py-1.5 rounded-lg"><RotateCcw size={12} /> Undo</button>
           
           {isInningsOneOver ? (
             <div className="text-center py-6">
               <h2 className="text-2xl font-black text-white mb-2">Innings Complete</h2>
-              <button onClick={startSecondInnings} className="bg-emerald-500 text-black font-black w-full py-4 rounded-xl text-lg mt-4">Start Run Chase</button>
+              <button onClick={startSecondInnings} className="bg-emerald-500 text-black font-black w-full py-4 rounded-xl text-lg mt-4 shadow-[0_0_15px_rgba(52,211,153,0.3)]">Start Run Chase</button>
             </div>
           ) : isMatchOver ? (
             <div className="text-center py-6">
               <h2 className="text-3xl font-black text-white mb-2">Match Finished!</h2>
               <p className="text-emerald-400 font-bold bg-emerald-900/30 border border-emerald-800 py-3 rounded-xl mb-6">{isTargetReached ? `${liveMatch.teamB} wins!` : `${liveMatch.teamA} wins!`}</p>
-              <button onClick={() => setShowInstantScorecard(true)} className="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black text-lg py-4 rounded-xl transition active:scale-95 flex justify-center items-center gap-2">
-                <Eye size={20} /> View Instant Scorecard
-              </button>
+              <button onClick={() => setShowInstantScorecard(true)} className="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black text-lg py-4 rounded-xl transition active:scale-95 flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(52,211,153,0.3)]"><Eye size={20} /> View Instant Scorecard</button>
             </div>
           ) : needsPlayerSelection ? (
             <div className="space-y-4">
@@ -127,7 +124,8 @@ export const MatchCenter = () => {
           ) : extraMode ? (
              <div className="animate-in fade-in zoom-in duration-200">
               <div className="flex items-center gap-3 mb-4"><button onClick={() => setExtraMode(null)} className="p-2 bg-zinc-800 rounded-lg hover:bg-zinc-700"><ChevronLeft size={16} /></button><h3 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">How many physical runs?</h3></div>
-              <div className="grid grid-cols-4 gap-2">{[0, 1, 2, 3, 4].map(num => (<button key={num} onClick={() => executeExtra(num)} className="bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg h-14 rounded-xl">{num}</button>))}</div>
+              {/* 🔥 NEW: Added 5 and 6 to the physical runs array */}
+              <div className="grid grid-cols-4 gap-2">{[0, 1, 2, 3, 4, 5, 6].map(num => (<button key={num} onClick={() => executeExtra(num)} className="bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg h-14 rounded-xl">{num}</button>))}</div>
             </div>
           ) : (
              <div>
@@ -142,6 +140,27 @@ export const MatchCenter = () => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* TIMELINE FEED */}
+        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 p-6 rounded-3xl flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Mic size={14} className="text-cyan-400" /> Broadcaster</h3>
+            {/* 🔥 NEW: The EN / KN Language Toggle */}
+            <div className="flex gap-1 bg-zinc-950 p-1 rounded-xl text-[10px] font-black border border-zinc-800">
+              <button onClick={() => setCommentaryLang("EN")} className={`px-3 py-1 rounded-lg ${commentaryLang === 'EN' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>EN</button>
+              <button onClick={() => setCommentaryLang("KN")} className={`px-3 py-1 rounded-lg ${commentaryLang === 'KN' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>ಕನ್ನಡ</button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-3 max-h-56 pr-2">
+            {timeline.length === 0 ? <p className="text-zinc-600 text-xs font-medium text-center mt-8">Feed empty.</p> : timeline.map((log) => (
+              <div key={log.id} className="flex gap-3 bg-black/50 p-3 rounded-xl border border-zinc-800/50 items-center">
+                <span className="font-black text-zinc-500 text-[10px] shrink-0 bg-zinc-900 px-2 py-1 rounded border border-zinc-800">{log.overDisplay}</span>
+                {/* Dynamically switches between English and Kannada based on the toggle! */}
+                <p className="text-xs flex-1 text-zinc-300">{commentaryLang === 'EN' ? log.commentaryEn : log.commentaryKn}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
