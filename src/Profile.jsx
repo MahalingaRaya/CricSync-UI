@@ -1,70 +1,56 @@
-import React, { useState } from 'react';
-import { User, MapPin, Award, Shield, CheckCircle } from 'lucide-react';
+import React from 'react';
+import { UserCircle, Award, CheckCircle2, Star } from 'lucide-react';
 
 export const Profile = () => {
-  const [isAvailable, setIsAvailable] = useState(true);
-
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto mb-20 md:mb-0 space-y-6">
-      
-      {/* Profile Header */}
-      <div className="bg-gradient-to-r from-zinc-900 to-zinc-950 p-6 md:p-8 rounded-3xl border border-zinc-800 shadow-xl flex flex-col md:flex-row items-center gap-6">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-3xl font-black text-black shadow-[0_0_30px_rgba(52,211,153,0.3)]">
-          MR
-        </div>
-        <div className="text-center md:text-left flex-1">
-          <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-            <h1 className="text-3xl font-black text-white tracking-tight">Mahalinga Raya</h1>
-            <CheckCircle size={20} className="text-emerald-500" />
-          </div>
-          <div className="flex items-center justify-center md:justify-start gap-2 text-zinc-400 text-sm font-medium mb-4">
-            <MapPin size={14} /> Bengaluru, Karnataka
-          </div>
-          
-          <div className="flex flex-wrap justify-center md:justify-start gap-2">
-            <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">All-Rounder</span>
-            <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Right-Hand Bat</span>
-            <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Right-Arm Medium</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Career & Draft Status */}
-      <div className="grid md:grid-cols-2 gap-4">
+    <div className="min-h-screen bg-black text-white p-4 md:p-8 font-sans pb-24">
+      <div className="max-w-md mx-auto space-y-6 pt-8">
         
-        {/* Availability Toggle */}
-        <div className="bg-zinc-900/50 border border-zinc-800/80 p-6 rounded-3xl flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-white text-lg flex items-center gap-2">
-              <Shield size={18} className="text-blue-400" /> Draft Status
-            </h3>
-            <p className="text-xs text-zinc-500 mt-1 font-medium">Allow organizers to recruit you.</p>
+        {/* Profile Header */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 text-center shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-r from-emerald-900/40 to-cyan-900/40"></div>
+          
+          <UserCircle size={80} className="mx-auto text-zinc-400 relative z-10 bg-black rounded-full border-4 border-black" />
+          <h2 className="text-2xl font-black text-white mt-4 flex items-center justify-center gap-2">
+            Mahalinga Raya <CheckCircle2 size={18} className="text-emerald-400" />
+          </h2>
+          <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mt-1">Pro Scorer & Tech Umpire</p>
+          
+          <div className="flex justify-center gap-4 mt-6">
+            <div className="bg-zinc-950 border border-zinc-800 px-4 py-2 rounded-xl text-center">
+              <span className="block text-2xl font-black text-white">42</span>
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Matches</span>
+            </div>
+            <div className="bg-zinc-950 border border-zinc-800 px-4 py-2 rounded-xl text-center">
+              <span className="block text-2xl font-black text-white flex justify-center items-center gap-1">4.9<Star size={14} className="text-yellow-400 fill-yellow-400"/></span>
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Rating</span>
+            </div>
           </div>
-          <button 
-            onClick={() => setIsAvailable(!isAvailable)}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${isAvailable ? 'bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-zinc-800 text-zinc-400'}`}
-          >
-            {isAvailable ? 'AVAILABLE TO JOIN' : 'UNAVAILABLE'}
-          </button>
         </div>
 
-        {/* Stats Summary */}
-        <div className="bg-zinc-900/50 border border-zinc-800/80 p-6 rounded-3xl flex items-center gap-6">
-           <Award size={32} className="text-amber-400 opacity-80" />
-           <div className="flex-1 grid grid-cols-3 gap-4 text-center">
-             <div>
-               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Matches</p>
-               <p className="text-xl font-black text-white">42</p>
-             </div>
-             <div>
-               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Runs</p>
-               <p className="text-xl font-black text-emerald-400">1.2k</p>
-             </div>
-             <div>
-               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Wickets</p>
-               <p className="text-xl font-black text-cyan-400">38</p>
-             </div>
-           </div>
+        {/* Certifications */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-black text-zinc-400 uppercase tracking-widest px-2">Certifications & Badges</h3>
+          
+          <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center gap-4">
+            <div className="bg-emerald-500/20 p-3 rounded-full text-emerald-400">
+              <Award size={24} />
+            </div>
+            <div>
+              <h4 className="font-black text-white">Level 2 Digital Scorer</h4>
+              <p className="text-xs text-zinc-500 font-medium">Verified by CricSync Network</p>
+            </div>
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center gap-4">
+            <div className="bg-cyan-500/20 p-3 rounded-full text-cyan-400">
+              <Award size={24} />
+            </div>
+            <div>
+              <h4 className="font-black text-white">Professional Umpire Badge</h4>
+              <p className="text-xs text-zinc-500 font-medium">Completed 20+ error-free matches</p>
+            </div>
+          </div>
         </div>
 
       </div>
