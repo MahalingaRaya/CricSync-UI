@@ -1,13 +1,16 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './AppContext';
-import { Navigation } from './Navigation';
+// Make sure to import your Navigation component wherever it lives
+import { Navigation } from './Navigation'; 
 import { Home } from './Home';
 import { CreateMatch } from './CreateMatch';
 import { MatchCenter } from './MatchCenter';
-import { Scorecard } from './Scorecard'; // <-- Added the import here
+import { Scorecard } from './Scorecard';
 
-// Temporary placeholders for upcoming features
+// 🔥 Import the new LinkedIn-style board
+import { LeagueOps } from './LeagueOps'; 
+
 const Placeholder = ({ title }) => (
   <div className="min-h-screen bg-black text-white flex items-center justify-center text-2xl font-bold text-zinc-500">
     {title} Module Coming Soon...
@@ -20,19 +23,16 @@ export default function App() {
       <BrowserRouter>
         <Navigation />
         <Routes>
-          {/* Active Operating System Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/create-match" element={<CreateMatch />} />
           <Route path="/match-center" element={<MatchCenter />} />
-          
-          {/* Spectator Mode Route */}
           <Route path="/scorecard/:id" element={<Scorecard />} /> 
           
-          {/* Upcoming Modules */}
+          {/* 🔥 Connect the Organize Route to the Job Board */}
+          <Route path="/organize" element={<LeagueOps />} />
+          
           <Route path="/teams" element={<Placeholder title="Team Management" />} />
           <Route path="/players" element={<Placeholder title="Player Registration" />} />
-          <Route path="/tournaments" element={<Placeholder title="Tournaments" />} />
-          <Route path="/careers" element={<Placeholder title="Careers Portal" />} />
         </Routes>
       </BrowserRouter>
     </AppProvider>
