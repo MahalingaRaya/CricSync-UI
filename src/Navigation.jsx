@@ -1,32 +1,36 @@
 import React from 'react';
-import { Home, Briefcase, Activity, User, Zap } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { Home, Briefcase, Activity, User } from 'lucide-react';
 
 export const Navigation = () => {
   const location = useLocation();
-  const isActive = (path) => location.pathname === path ? "text-emerald-400" : "text-zinc-500";
+  const currentPath = location.pathname;
+
+  const navItems = [
+    { name: 'Feed', path: '/', icon: <Home size={20} /> },
+    { name: 'Organize', path: '/organize', icon: <Briefcase size={20} /> },
+    { name: 'Live Engine', path: '/create-match', icon: <Activity size={20} /> },
+    { name: 'Identity', path: '/profile', icon: <User size={20} /> }
+  ];
 
   return (
-    <>
-      <nav className="sticky top-0 z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-800/50 px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center font-black text-black">
-            <Zap size={18} />
-          </div>
-          <h1 className="text-xl font-extrabold tracking-tight text-white">CricSync</h1>
-        </div>
-        <span className="text-[10px] font-bold bg-zinc-800 text-zinc-400 px-2 py-1 rounded border border-zinc-700">PRO MODE</span>
-      </nav>
-
-      {/* Simplified Mobile Navigation Menu */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-zinc-800/50 pb-safe z-50">
-        <div className="flex justify-around items-center h-16">
-          <Link to="/" className={`flex flex-col items-center gap-1 ${isActive('/')}`}><Home size={20} /><span className="text-[10px] font-semibold">Feed</span></Link>
-          <Link to="/organizer" className={`flex flex-col items-center gap-1 ${isActive('/organizer')}`}><Briefcase size={20} /><span className="text-[10px] font-semibold">Organize</span></Link>
-          <Link to="/live" className={`flex flex-col items-center gap-1 ${isActive('/live')}`}><Activity size={20} /><span className="text-[10px] font-semibold">Live Engine</span></Link>
-          <Link to="/profile" className={`flex flex-col items-center gap-1 ${isActive('/profile')}`}><User size={20} /><span className="text-[10px] font-semibold">Identity</span></Link>
-        </div>
+    <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md border-t border-zinc-800 z-50">
+      <div className="max-w-md mx-auto flex justify-between items-center px-6 py-3">
+        {navItems.map((item) => {
+          const isActive = currentPath === item.path || (item.name === 'Live Engine' && currentPath.includes('/match-center'));
+          
+          return (
+            <Link 
+              key={item.name} 
+              to={item.path} 
+              className={`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              {item.icon}
+              <span className="text-[10px] font-black uppercase tracking-wider">{item.name}</span>
+            </Link>
+          );
+        })}
       </div>
-    </>
+    </div>
   );
-}; 
+};
