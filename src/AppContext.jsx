@@ -19,7 +19,7 @@ export const AppProvider = ({ children }) => {
 
   const [timeline, setTimeline] = useState([]);
   
-  // 🔥 THE FIX: Master Array holds all stats permanently
+  // Master Array holds all stats permanently
   const [allPlayers, setAllPlayers] = useState([]);
   const [striker, setStriker] = useState(null);
   const [nonStriker, setNonStriker] = useState(null);
@@ -43,9 +43,8 @@ export const AppProvider = ({ children }) => {
       } catch (err) { console.error("Backend sleeping."); }
     };
     fetchInitialData();
-  }, []); // <--- Removed dependencies. Runs ONLY once so stats are never erased!
+  }, []);
 
-  // Dynamically generate rosters from the Master Array
   const isTeamABatting = liveMatch.innings === 1;
   const battingTeamName = isTeamABatting ? liveMatch.teamA : liveMatch.teamB;
   const bowlingTeamName = isTeamABatting ? liveMatch.teamB : liveMatch.teamA;
@@ -53,7 +52,8 @@ export const AppProvider = ({ children }) => {
   const battingRoster = allPlayers.filter(p => p.teamName === battingTeamName);
   const bowlingRoster = allPlayers.filter(p => p.teamName === bowlingTeamName);
 
-  const processDelivery = async ({ batterRuns = 0, extraRuns = 0, isLegal = true, physicalRuns = 0, isWicket = false, isByeOrLegBye = false, eventText = "" }) => {
+  // 🔥 THE FIX: eventText now accepts bilingual objects {en, kn}
+  const processDelivery = async ({ batterRuns = 0, extraRuns = 0, isLegal = true, physicalRuns = 0, isWicket = false, isByeOrLegBye = false, eventText = { en: "", kn: "" } }) => {
     setHistory(prev => [...prev, { match: liveMatch, striker, nonStriker, currentBowler, allPlayers }]);
 
     const totalRunsThisBall = batterRuns + extraRuns;
@@ -95,16 +95,18 @@ export const AppProvider = ({ children }) => {
     setNonStriker(nextNonStriker);
     setCurrentBowler(isEndOfOver ? null : updatedBowler);
 
-    // 🔥 Update the Master Array instantly!
     setAllPlayers(prev => prev.map(p => 
       p.id === updatedStriker.id ? updatedStriker : 
       p.id === updatedBowler?.id ? updatedBowler : 
       p
     ));
 
+    // 🔥 THE FIX: Routing English and Kannada strings to the timeline
     const overStr = `${Math.floor((newBalls - (isLegal ? 1 : 0)) / 6)}.${((newBalls - (isLegal ? 1 : 0)) % 6) + (isLegal ? 1 : 0)}`;
-    const actionText = customCommentary || eventText;
-    setTimeline(prev => [{ id: Date.now(), overDisplay: overStr, commentaryEn: actionText, commentaryKn: "" }, ...prev]);
+    const actionTextEn = customCommentary || eventText.en;
+    const actionTextKn = customCommentary || eventText.kn || eventText.en; // Fallback to English if Kannada is missing
+    
+    setTimeline(prev => [{ id: Date.now(), overDisplay: overStr, commentaryEn: actionTextEn, commentaryKn: actionTextKn }, ...prev]);
     
     syncToBackend(newRuns, newWickets, newBalls);
     setCustomCommentary("");
@@ -128,7 +130,7 @@ export const AppProvider = ({ children }) => {
   const startSecondInnings = () => {
     setHistory([]); setStriker(null); setNonStriker(null); setCurrentBowler(null);
     setLiveMatch(prev => ({ ...prev, innings: 2, target: prev.runs + 1, runs: 0, wickets: 0, balls: 0 }));
-    setTimeline([{ id: Date.now(), overDisplay: "0.0", commentaryEn: "Run chase begins!", commentaryKn: "" }]);
+    setTimeline([{ id: Date.now(), overDisplay: "0.0", commentaryEn: "Run chase begins!", commentaryKn: "ರನ್ ಚೇಸ್ ಪ್ರಾರಂಭ!" }]);
   };
 
   return (
