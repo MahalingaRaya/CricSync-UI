@@ -9,7 +9,7 @@ export const Navigation = () => {
   const navItems = [
     { name: 'Feed', path: '/', icon: <Home size={20} /> },
     { name: 'Organize', path: '/organize', icon: <Briefcase size={20} /> },
-    { name: 'Live Engine', path: '/create-match', icon: <Activity size={20} /> },
+    { name: 'Live Scoring', path: '/create-match', icon: <Activity size={20} /> },
     { name: 'Identity', path: '/profile', icon: <User size={20} /> }
   ];
 
@@ -17,7 +17,8 @@ export const Navigation = () => {
     <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md border-t border-zinc-800 z-50">
       <div className="max-w-md mx-auto flex justify-between items-center px-6 py-3">
         {navItems.map((item) => {
-          const isActive = currentPath === item.path || (item.name === 'Live Engine' && currentPath.includes('/match-center'));
+          // Updated to check for 'Live Scoring' instead of 'Live Engine'
+          const isActive = currentPath === item.path || (item.name === 'Live Scoring' && currentPath.includes('/match-center'));
           
           return (
             <Link 
