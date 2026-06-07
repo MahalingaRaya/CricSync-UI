@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, MapPin, DollarSign, CheckCircle2, Clock, ShieldCheck, X } from 'lucide-react';
+import { Briefcase, MapPin, IndianRupee, CheckCircle2, Clock, ShieldCheck, X } from 'lucide-react';
 
 export const LeagueOps = () => {
   const [activeTab, setActiveTab] = useState('JOBS');
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Controls the "Post Job" popup
   const [showPostForm, setShowPostForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -15,19 +14,18 @@ export const LeagueOps = () => {
     league: "Bengaluru Corporate Cup",
     location: "Chinnaswamy Stadium",
     date: "This Sunday, 9:00 AM",
-    fee: "₹1,500/match",
+    fee: "1500/match", // Removed the manual ₹ symbol here, we will handle it in the UI!
     type: "Umpiring"
   });
 
   const API_URL = "https://cricsync-engine.onrender.com/api/matches/marketplace";
 
-  // 1. FETCH JOBS FROM CLOUD
   const fetchJobs = async () => {
     try {
       const res = await fetch(API_URL);
       if (res.ok) {
         const data = await res.json();
-        setJobs(data.reverse()); // Show newest jobs at the top
+        setJobs(data.reverse());
       }
     } catch (e) {
       console.error("Failed to fetch marketplace jobs.");
@@ -40,7 +38,6 @@ export const LeagueOps = () => {
     fetchJobs();
   }, []);
 
-  // 2. POST NEW JOB TO CLOUD
   const handlePostJob = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -53,7 +50,7 @@ export const LeagueOps = () => {
       if (res.ok) {
         alert("Job successfully posted to the CricSync Network!");
         setShowPostForm(false);
-        fetchJobs(); // Refresh the list to show the new job
+        fetchJobs(); 
       }
     } catch (e) {
       alert("Failed to connect to cloud engine.");
@@ -61,7 +58,6 @@ export const LeagueOps = () => {
     setIsSubmitting(false);
   };
 
-  // 3. APPLY TO JOB (Local state for now)
   const handleApply = (jobId) => {
     setJobs(jobs.map(job => job.id === jobId ? { ...job, applied: true } : job));
     alert("Application sent to League Organizer!");
@@ -79,10 +75,7 @@ export const LeagueOps = () => {
             </h1>
             <p className="text-zinc-500 text-sm font-bold mt-1">The Professional Marketplace for Cricket Ops</p>
           </div>
-          <button 
-            onClick={() => setShowPostForm(true)}
-            className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold px-5 py-2.5 rounded-xl transition flex items-center gap-2 text-sm"
-          >
+          <button onClick={() => setShowPostForm(true)} className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold px-5 py-2.5 rounded-xl transition flex items-center gap-2 text-sm">
             <Briefcase size={16} /> Post a Job
           </button>
         </div>
@@ -107,17 +100,21 @@ export const LeagueOps = () => {
               <div key={job.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition group flex flex-col md:flex-row justify-between gap-6">
                 <div className="space-y-3 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="bg-zinc-950 border border-zinc-800 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg text-emerald-400">{job.type || "Operations"}</span>
+                    <span className="bg-zinc-950 border border-zinc-800 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg text-emerald-400">
+                      {job.type || "Operations"}
+                    </span>
                     {job.applied && <span className="bg-cyan-950 border border-cyan-900 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg text-cyan-400 flex items-center gap-1"><CheckCircle2 size={12}/> Applied</span>}
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-white">{job.role}</h2>
-                    <p className="text-zinc-400 font-bold text-sm">{job.league}</p>
+                    {/* Fallbacks added here so it never looks blank */}
+                    <h2 className="text-xl font-black text-white">{job.role || "Cricket Professional Needed"}</h2>
+                    <p className="text-zinc-400 font-bold text-sm">{job.league || "Local Tournament"}</p>
                   </div>
                   <div className="flex flex-wrap gap-4 text-xs font-medium text-zinc-500 pt-2">
-                    <span className="flex items-center gap-1"><MapPin size={14} /> {job.location}</span>
-                    <span className="flex items-center gap-1"><Clock size={14} /> {job.date}</span>
-                    <span className="flex items-center gap-1 text-emerald-500 font-bold"><DollarSign size={14} /> {job.fee}</span>
+                    <span className="flex items-center gap-1"><MapPin size={14} /> {job.location || "TBD"}</span>
+                    <span className="flex items-center gap-1"><Clock size={14} /> {job.date || "Flexible"}</span>
+                    {/* NEW: Indian Rupee Symbol replaces Dollar Sign */}
+                    <span className="flex items-center gap-0.5 text-emerald-500 font-bold"><IndianRupee size={13} /> {job.fee || "Negotiable"}</span>
                   </div>
                 </div>
                 <div className="flex items-center md:items-end md:justify-end">
@@ -167,8 +164,8 @@ export const LeagueOps = () => {
                   <input type="text" value={newJob.location} onChange={e => setNewJob({...newJob, location: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500" required />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Payout / Fee</label>
-                  <input type="text" value={newJob.fee} onChange={e => setNewJob({...newJob, fee: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500" required />
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Payout / Fee (₹)</label>
+                  <input type="text" placeholder="e.g. 1500/match" value={newJob.fee} onChange={e => setNewJob({...newJob, fee: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500" required />
                 </div>
               </div>
 
