@@ -19,8 +19,8 @@ export const AppProvider = ({ children }) => {
 
   const [timeline, setTimeline] = useState([]);
   
-  const [battingRoster, setBattingRoster] = useState([]);
-  const [bowlingRoster, setBowlingRoster] = useState([]);
+  // 🔥 THE FIX: Master Array holds all stats permanently
+  const [allPlayers, setAllPlayers] = useState([]);
   const [striker, setStriker] = useState(null);
   const [nonStriker, setNonStriker] = useState(null);
   const [currentBowler, setCurrentBowler] = useState(null);
@@ -30,29 +30,31 @@ export const AppProvider = ({ children }) => {
       try {
         const activeId = localStorage.getItem('activeMatchId') || 1;
         const matchRes = await fetch(`${API_BASE_URL}/matches/${activeId}`);
-        let matchData = null;
         if (matchRes.ok) {
-          matchData = await matchRes.json();
+          const matchData = await matchRes.json();
           setLiveMatch(prev => ({ ...prev, id: matchData.id, maxOvers: matchData.maxOvers || prev.maxOvers, teamA: matchData.teamA, teamB: matchData.teamB, runs: matchData.runsA || prev.runs, wickets: matchData.wicketsA || prev.wickets, balls: matchData.ballsA || prev.balls }));
         }
 
         const playerRes = await fetch(`${API_BASE_URL}/match-players/match/${activeId}`);
-        if (playerRes.ok && matchData) {
-          const allPlayers = await playerRes.json();
-          const isTeamABatting = liveMatch.innings === 1;
-          const battingTeamName = isTeamABatting ? matchData.teamA : matchData.teamB;
-          const bowlingTeamName = isTeamABatting ? matchData.teamB : matchData.teamA;
-          setBattingRoster(allPlayers.filter(p => p.teamName === battingTeamName));
-          setBowlingRoster(allPlayers.filter(p => p.teamName === bowlingTeamName));
+        if (playerRes.ok) {
+          const players = await playerRes.json();
+          setAllPlayers(players);
         }
       } catch (err) { console.error("Backend sleeping."); }
     };
     fetchInitialData();
-  }, [liveMatch.innings]);
+  }, []); // <--- Removed dependencies. Runs ONLY once so stats are never erased!
 
-  // 🔥 THE NEW PROFESSIONAL CRICKET ENGINE 🔥
+  // Dynamically generate rosters from the Master Array
+  const isTeamABatting = liveMatch.innings === 1;
+  const battingTeamName = isTeamABatting ? liveMatch.teamA : liveMatch.teamB;
+  const bowlingTeamName = isTeamABatting ? liveMatch.teamB : liveMatch.teamA;
+  
+  const battingRoster = allPlayers.filter(p => p.teamName === battingTeamName);
+  const bowlingRoster = allPlayers.filter(p => p.teamName === bowlingTeamName);
+
   const processDelivery = async ({ batterRuns = 0, extraRuns = 0, isLegal = true, physicalRuns = 0, isWicket = false, isByeOrLegBye = false, eventText = "" }) => {
-    setHistory(prev => [...prev, { match: liveMatch, striker, nonStriker, currentBowler }]);
+    setHistory(prev => [...prev, { match: liveMatch, striker, nonStriker, currentBowler, allPlayers }]);
 
     const totalRunsThisBall = batterRuns + extraRuns;
     const newRuns = liveMatch.runs + totalRunsThisBall;
@@ -63,15 +65,13 @@ export const AppProvider = ({ children }) => {
     let updatedStriker = { ...striker };
     let updatedBowler = { ...currentBowler };
 
-    // 1. UPDATE BATSMAN STATS
     if (striker) {
       updatedStriker.runsScored += batterRuns;
-      if (isLegal || (!isLegal && extraRuns > 1)) updatedStriker.ballsFaced += 1; // Faces ball on legal or NB
+      if (isLegal || (!isLegal && extraRuns > 1)) updatedStriker.ballsFaced += 1;
       if (batterRuns === 4) updatedStriker.fours += 1;
       if (batterRuns === 6) updatedStriker.sixes += 1;
     }
     
-    // 2. UPDATE BOWLER STATS (Byes & Leg Byes do NOT count against bowler runs)
     if (currentBowler) {
       const runsAgainstBowler = isByeOrLegBye ? 0 : totalRunsThisBall;
       updatedBowler.runsConceded += runsAgainstBowler;
@@ -85,19 +85,23 @@ export const AppProvider = ({ children }) => {
 
     setLiveMatch(prev => ({ ...prev, runs: newRuns, wickets: newWickets, balls: newBalls }));
 
-    // 3. THE STRIKE ROTATION ALGORITHM
-    let swapNeeded = (physicalRuns % 2 !== 0); // If they run 1, 3, or 5, flip them.
-    if (isEndOfOver) swapNeeded = !swapNeeded; // Flip again at the end of the over.
+    let swapNeeded = (physicalRuns % 2 !== 0);
+    if (isEndOfOver) swapNeeded = !swapNeeded;
 
-    if (swapNeeded) {
-      setStriker(nonStriker);
-      setNonStriker(updatedStriker);
-    } else {
-      setStriker(updatedStriker);
-    }
+    let nextStriker = swapNeeded ? nonStriker : updatedStriker;
+    let nextNonStriker = swapNeeded ? updatedStriker : nonStriker;
+
+    setStriker(nextStriker);
+    setNonStriker(nextNonStriker);
     setCurrentBowler(isEndOfOver ? null : updatedBowler);
 
-    // 4. TIMELINE & CLOUD SYNC
+    // 🔥 Update the Master Array instantly!
+    setAllPlayers(prev => prev.map(p => 
+      p.id === updatedStriker.id ? updatedStriker : 
+      p.id === updatedBowler?.id ? updatedBowler : 
+      p
+    ));
+
     const overStr = `${Math.floor((newBalls - (isLegal ? 1 : 0)) / 6)}.${((newBalls - (isLegal ? 1 : 0)) % 6) + (isLegal ? 1 : 0)}`;
     const actionText = customCommentary || eventText;
     setTimeline(prev => [{ id: Date.now(), overDisplay: overStr, commentaryEn: actionText, commentaryKn: "" }, ...prev]);
@@ -111,6 +115,7 @@ export const AppProvider = ({ children }) => {
     const previousState = history[history.length - 1];
     setHistory(prev => prev.slice(0, -1));
     setLiveMatch(previousState.match); setStriker(previousState.striker); setNonStriker(previousState.nonStriker); setCurrentBowler(previousState.currentBowler);
+    setAllPlayers(previousState.allPlayers);
     setTimeline(prev => prev.slice(1));
     syncToBackend(previousState.match.runs, previousState.match.wickets, previousState.match.balls);
   };
@@ -129,7 +134,7 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider value={{ 
       liveMatch, timeline, customCommentary, setCustomCommentary, processDelivery, undoLastAction, history, startSecondInnings, user,
-      battingRoster, bowlingRoster, striker, setStriker, nonStriker, setNonStriker, currentBowler, setCurrentBowler
+      battingRoster, bowlingRoster, striker, setStriker, nonStriker, setNonStriker, currentBowler, setCurrentBowler, allPlayers
     }}>
       {children}
     </AppContext.Provider>
