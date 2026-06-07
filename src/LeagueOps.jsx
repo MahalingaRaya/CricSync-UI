@@ -1,100 +1,104 @@
 import React, { useState } from 'react';
-import { useApp } from './AppContext';
+import { Briefcase, MapPin, DollarSign, CheckCircle2, Clock, ShieldCheck } from 'lucide-react';
 
-export function LeagueOps() {
-  const { addLeagueEvent } = useApp();
+export const LeagueOps = () => {
+  const [activeTab, setActiveTab] = useState('JOBS'); // 'JOBS' or 'MY_APPS'
   
-  const [tName, setTName] = useState('');
-  const [team1, setTeam1] = useState('');
-  const [team2, setTeam2] = useState('');
-  const [matchVenue, setMatchVenue] = useState('');
+  // Dummy data for the job board
+  const [jobs, setJobs] = useState([
+    { id: 1, role: "Main Umpire", league: "Bengaluru Corporate Cup", location: "Chinnaswamy Ground B", date: "This Sunday, 9:00 AM", fee: "₹1,500/match", applied: false, type: "Umpiring" },
+    { id: 2, role: "Digital Scorer", league: "Tech Premier League", location: "Whitefield Sports Arena", date: "Saturday, 2:00 PM", fee: "₹800/match", applied: false, type: "Scoring" },
+    { id: 3, role: "Kannada Commentator", league: "Karnataka State Tournament", location: "Hubli Central Ground", date: "Next Weekend", fee: "₹2,500/day", applied: false, type: "Media" },
+    { id: 4, role: "Square Leg Umpire", league: "Bengaluru Corporate Cup", location: "Chinnaswamy Ground B", date: "This Sunday, 9:00 AM", fee: "₹1,000/match", applied: true, type: "Umpiring" }
+  ]);
 
-  const handlePublish = (e) => {
-    e.preventDefault();
-    if (!team1 || !team2) {
-      alert("Please enter both Team Names!");
-      return;
-    }
-
-    // Structures inputs cleanly to pass downstream to the new AppContext function
-    const tournamentData = {
-      teamA: team1,
-      teamB: team2,
-      league: tName || "Corporate Premier League 2K26",
-      venue: matchVenue || "International Stadium Bengaluru"
-    };
-
-    addLeagueEvent(tournamentData);
-    
-    setTName('');
-    setTeam1('');
-    setTeam2('');
-    setMatchVenue('');
-    alert("🏆 Match Initialized and Published Successfully!");
+  const handleApply = (jobId) => {
+    setJobs(jobs.map(job => job.id === jobId ? { ...job, applied: true } : job));
+    alert("Application sent to League Organizer!");
   };
 
   return (
-    <div className="bg-black text-white min-h-screen p-4 pb-24">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md mx-auto">
-        <h2 className="text-xl font-bold mb-1">⚡ Organizer Admin Console</h2>
-        <p className="text-zinc-400 text-xs mb-6">Broadcast a new active live tournament game</p>
+    <div className="min-h-screen bg-black text-white p-4 md:p-8 font-sans pb-24">
+      <div className="max-w-4xl mx-auto space-y-6">
         
-        <form onSubmit={handlePublish} className="space-y-4">
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <label className="block text-zinc-400 text-xs font-bold uppercase mb-1.5">Tournament / League Name</label>
-            <input 
-              type="text" 
-              placeholder="e.g., Corporate Premier League 2K26"
-              value={tName}
-              onChange={(e) => setTName(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-            />
+            <h1 className="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
+              Cricket Network
+            </h1>
+            <p className="text-zinc-500 text-sm font-bold mt-1">The Professional Marketplace for Cricket Ops</p>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-zinc-400 text-xs font-bold uppercase mb-1.5">Team A Name</label>
-              <input 
-                type="text" 
-                placeholder="e.g., MahaTech Mahi"
-                value={team1}
-                onChange={(e) => setTeam1(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-zinc-400 text-xs font-bold uppercase mb-1.5">Team B Name</label>
-              <input 
-                type="text" 
-                placeholder="e.g., CricSync"
-                value={team2}
-                onChange={(e) => setTeam2(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-zinc-400 text-xs font-bold uppercase mb-1.5">Match Venue / Stadium</label>
-            <input 
-              type="text" 
-              placeholder="e.g., International Stadium Bengaluru"
-              value={matchVenue}
-              onChange={(e) => setMatchVenue(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 text-white p-3 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-            />
-          </div>
-
-          <button 
-            type="submit"
-            className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-3.5 rounded-xl transition mt-4 text-sm"
-          >
-            Publish Live Match
+          <button className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold px-5 py-2.5 rounded-xl transition flex items-center gap-2 text-sm">
+            <Briefcase size={16} /> Post a Job
           </button>
-        </form>
+        </div>
+
+        {/* NAVIGATION TABS */}
+        <div className="flex gap-2 bg-zinc-950 p-1 rounded-2xl border border-zinc-800 w-full max-w-sm">
+          <button 
+            onClick={() => setActiveTab('JOBS')} 
+            className={`flex-1 py-2 text-sm font-black rounded-xl transition ${activeTab === 'JOBS' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            Job Board
+          </button>
+          <button 
+            onClick={() => setActiveTab('MY_APPS')} 
+            className={`flex-1 py-2 text-sm font-black rounded-xl transition ${activeTab === 'MY_APPS' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            My Applications
+          </button>
+        </div>
+
+        {/* JOB FEED */}
+        <div className="grid gap-4">
+          {jobs.filter(j => activeTab === 'JOBS' ? !j.applied : j.applied).length === 0 ? (
+            <div className="text-center py-20 bg-zinc-900/50 rounded-3xl border border-zinc-800/50">
+              <ShieldCheck size={48} className="mx-auto text-zinc-600 mb-4" />
+              <h3 className="text-xl font-bold text-zinc-400">No active postings found.</h3>
+            </div>
+          ) : (
+            jobs.filter(j => activeTab === 'JOBS' ? !j.applied : j.applied).map(job => (
+              <div key={job.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700 transition group flex flex-col md:flex-row justify-between gap-6">
+                
+                <div className="space-y-3 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-zinc-950 border border-zinc-800 text-xs font-black uppercase tracking-widest px-3 py-1 rounded-lg text-emerald-400">
+                      {job.type}
+                    </span>
+                    {job.applied && <span className="bg-cyan-950 border border-cyan-900 text-xs font-black uppercase tracking-widest px-3 py-1 rounded-lg text-cyan-400 flex items-center gap-1"><CheckCircle2 size={12}/> Applied</span>}
+                  </div>
+                  
+                  <div>
+                    <h2 className="text-xl font-black text-white">{job.role}</h2>
+                    <p className="text-zinc-400 font-bold text-sm">{job.league}</p>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-4 text-xs font-medium text-zinc-500 pt-2">
+                    <span className="flex items-center gap-1"><MapPin size={14} /> {job.location}</span>
+                    <span className="flex items-center gap-1"><Clock size={14} /> {job.date}</span>
+                    <span className="flex items-center gap-1 text-emerald-500 font-bold"><DollarSign size={14} /> {job.fee}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center md:items-end md:justify-end">
+                  {!job.applied ? (
+                    <button onClick={() => handleApply(job.id)} className="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-black font-black px-8 py-3 rounded-xl transition active:scale-95">
+                      Easy Apply
+                    </button>
+                  ) : (
+                    <button disabled className="w-full md:w-auto bg-zinc-950 border border-zinc-800 text-zinc-500 font-black px-8 py-3 rounded-xl cursor-not-allowed">
+                      Application Under Review
+                    </button>
+                  )}
+                </div>
+
+              </div>
+            ))
+          )}
+        </div>
+
       </div>
     </div>
   );
-}
+};
