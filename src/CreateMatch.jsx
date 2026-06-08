@@ -20,66 +20,53 @@ export const CreateMatch = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleCreateMatch = async (e) => {
+  const handleCreateMatch = (e) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const cleanTeamA = teamA.trim() || "Team A";
-      const cleanTeamB = teamB.trim() || "Team B";
+    const cleanTeamA = teamA.trim() || "Team A";
+    const cleanTeamB = teamB.trim() || "Team B";
+    const tempMatchId = Date.now(); // Creates an instant, unique local ID
 
-      const matchRes = await fetch('https://cricsync-engine.onrender.com/api/matches/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          teamA: cleanTeamA,
-          teamB: cleanTeamB,
-          venue: venue.trim() || "Local Ground",
-          tossWinner: tossWinner.trim() || cleanTeamA,
-          tossDecision: tossDecision,
-          maxOvers: Number(overs),
-          maxWickets: 10
-        })
-      });
+    // 1. Build the match data locally
+    const localMatch = {
+      id: tempMatchId,
+      teamA: cleanTeamA,
+      teamB: cleanTeamB,
+      runs: 0, wickets: 0, balls: 0,
+      innings: 1, target: 0,
+      maxOvers: Number(overs)
+    };
 
-      if (!matchRes.ok) throw new Error("Match creation failed.");
-      const newMatchData = await matchRes.json();
-      const matchId = newMatchData.id;
+    // 2. Build the player data locally
+    const teamAList = teamAPlayers.split('\n').filter(name => name.trim() !== '');
+    const teamBList = teamBPlayers.split('\n').filter(name => name.trim() !== '');
 
-      const teamAList = teamAPlayers.split('\n').filter(name => name.trim() !== '');
-      const teamBList = teamBPlayers.split('\n').filter(name => name.trim() !== '');
+    const allPlayers = [];
+    let pId = 1;
+    teamAList.forEach(name => allPlayers.push({ id: pId++, matchId: tempMatchId, teamName: cleanTeamA, playerName: name.trim(), runsScored: 0, ballsFaced: 0, fours: 0, sixes: 0, oversBowled: 0, runsConceded: 0, wicketsTaken: 0 }));
+    teamBList.forEach(name => allPlayers.push({ id: pId++, matchId: tempMatchId, teamName: cleanTeamB, playerName: name.trim(), runsScored: 0, ballsFaced: 0, fours: 0, sixes: 0, oversBowled: 0, runsConceded: 0, wicketsTaken: 0 }));
 
-      const allPlayers = [];
-      teamAList.forEach(name => allPlayers.push({ matchId, teamName: cleanTeamA, playerName: name.trim() }));
-      teamBList.forEach(name => allPlayers.push({ matchId, teamName: cleanTeamB, playerName: name.trim() }));
+    // 3. Save instantly to Browser Memory (localStorage)
+    localStorage.setItem('activeMatchId', tempMatchId);
+    localStorage.setItem('localMatchData', JSON.stringify(localMatch));
+    localStorage.setItem('localPlayersData', JSON.stringify(allPlayers));
 
-      if (allPlayers.length > 0) {
-        const playerRes = await fetch('https://cricsync-engine.onrender.com/api/match-players/bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(allPlayers)
-        });
-        
-        if (!playerRes.ok) {
-          alert("Warning: Match created, but players failed to save. Is the database updated?");
-        }
-      }
+    // 4. Fire the Cloud Sync in the background (DO NOT WAIT FOR IT)
+    fetch('https://cricsync-engine.onrender.com/api/matches/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teamA: cleanTeamA, teamB: cleanTeamB, venue: venue.trim() || "Local Ground", tossWinner: tossWinner.trim() || cleanTeamA, tossDecision, maxOvers: Number(overs), maxWickets: 10 })
+    }).catch(() => console.log("Cloud sleeping. Continuing entirely offline."));
 
-      localStorage.setItem('activeMatchId', matchId);
-      localStorage.setItem('matchMaxOvers', overs);
+    // 5. INSTANT TELEPORT (0 Seconds wait)
+    setTimeout(() => {
       navigate('/match-center');
-
-    } catch (error) {
-      console.error("Setup failed:", error);
-      alert("Failed to initialize match on the cloud database.");
-      setLoading(false);
-    }
+    }, 50); 
   };
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-6 flex flex-col items-center py-12 font-sans relative overflow-hidden">
-      
-      {/* Subtle Background Glow to match Home Screen */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative z-10">
@@ -140,22 +127,16 @@ export const CreateMatch = () => {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{teamA || "Team A"} Roster</label>
-              <textarea 
-                rows="11" value={teamAPlayers} onChange={(e) => setTeamAPlayers(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500"
-              />
+              <textarea rows="11" value={teamAPlayers} onChange={(e) => setTeamAPlayers(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500" />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">{teamB || "Team B"} Roster</label>
-              <textarea 
-                rows="11" value={teamBPlayers} onChange={(e) => setTeamBPlayers(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500"
-              />
+              <textarea rows="11" value={teamBPlayers} onChange={(e) => setTeamBPlayers(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500" />
             </div>
           </div>
 
           <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-black font-black text-lg py-4 rounded-xl transition active:scale-95 mt-4 shadow-[0_0_15px_rgba(52,211,153,0.3)]">
-            {loading ? "Syncing to Cloud Engine..." : "Launch Scorecard"}
+            {loading ? "Booting Engine..." : "Launch Scorecard"}
           </button>
 
         </form>
