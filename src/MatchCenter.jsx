@@ -45,14 +45,14 @@ export const MatchCenter = () => {
       await fetch('https://cricsync-engine.onrender.com/api/match-players/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allPlayers) });
       const url = `${window.location.origin}/scorecard/${liveMatch.id}`;
       navigator.clipboard.writeText(url);
-      alert("✅ Scorecard saved to Cloud! Public Link copied to clipboard.");
+      // 🔥 CRICKET THEMED ALERT
+      alert("🏏 Match result broadcasted! Official Scorecard link copied to your clipboard.");
     } catch (e) {
-      alert("Network error. Stats are saved locally but failed to reach the cloud.");
+      alert("Network error. Stats are saved locally but failed to broadcast.");
     }
     setIsPublishing(false);
   };
 
-  // 🔥 THE FIX: Dynamic 2-Innings Scorecard Render
   if (showInstantScorecard) {
     const teamAStats = allPlayers.filter(p => p.teamName === liveMatch.teamA);
     const teamBStats = allPlayers.filter(p => p.teamName === liveMatch.teamB);
@@ -77,7 +77,7 @@ export const MatchCenter = () => {
           </div>
         </div>
 
-        {/* INNINGS 2 (Only renders if 2nd innings has started) */}
+        {/* INNINGS 2 */}
         {liveMatch.innings === 2 && (
           <div className="bg-zinc-900/80 backdrop-blur-xl p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
             <h3 className="text-lg font-black text-cyan-400 border-b border-zinc-800 pb-2 uppercase tracking-wider">{liveMatch.teamB} Innings</h3>
@@ -94,8 +94,9 @@ export const MatchCenter = () => {
           </div>
         )}
 
+        {/* 🔥 CRICKET THEMED BUTTON */}
         <button onClick={publishAndCopyLink} disabled={isPublishing} className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-black font-black text-lg py-4 rounded-xl flex justify-center items-center gap-2 transition active:scale-95 shadow-[0_0_15px_rgba(52,211,153,0.3)] mt-4">
-          <Share2 size={20} /> {isPublishing ? "Syncing..." : "Sync to Cloud & Copy Public Link"}
+          <Share2 size={20} /> {isPublishing ? "Transmitting to Pavilion..." : "Broadcast Official Scorecard"}
         </button>
       </div>
     );
