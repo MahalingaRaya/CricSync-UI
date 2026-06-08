@@ -20,7 +20,6 @@ export const LeagueOps = () => {
 
   const API_URL = "https://cricsync-engine.onrender.com/api/matches/marketplace";
 
-  // 🔥 UPDATED: 4-Second Timeout & Instant Fallbacks
   const fetchJobs = async () => {
     try {
       const controller = new AbortController();
@@ -36,7 +35,6 @@ export const LeagueOps = () => {
         throw new Error("Backend error");
       }
     } catch (e) {
-      console.log("Cloud sleeping. Loading instant local data for recruiter demo.");
       // Instant fallbacks so the board is NEVER blank
       setJobs([
         { id: 99, role: "Pro Digital Scorer", league: "TCS Inter-Corporate Cup", location: "Bengaluru Central", date: "Saturday, 4:00 PM", fee: "1200/match", type: "Scoring", applied: false },
@@ -67,8 +65,7 @@ export const LeagueOps = () => {
         fetchJobs(); 
       }
     } catch (e) {
-      alert("Failed to connect to cloud engine. Saving locally for demo.");
-      // For demo purposes: if backend is sleeping, temporarily add it to the UI anyway
+      alert("Failed to connect to network. Saving locally for demo.");
       setJobs([{...newJob, id: Date.now(), applied: false}, ...jobs]);
       setShowPostForm(false);
     }
@@ -83,12 +80,10 @@ export const LeagueOps = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8 font-sans pb-24 relative overflow-hidden">
       
-      {/* Subtle Background Glow */}
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="max-w-4xl mx-auto space-y-6 relative z-10 pt-4">
         
-        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl">
           <div>
             <h1 className="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
@@ -101,16 +96,15 @@ export const LeagueOps = () => {
           </button>
         </div>
 
-        {/* NAVIGATION TABS */}
         <div className="flex gap-2 bg-zinc-900/80 backdrop-blur-sm p-1.5 rounded-2xl border border-zinc-800 w-full max-w-sm">
           <button onClick={() => setActiveTab('JOBS')} className={`flex-1 py-2 text-sm font-black rounded-xl transition ${activeTab === 'JOBS' ? 'bg-zinc-800 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}>Job Board</button>
           <button onClick={() => setActiveTab('MY_APPS')} className={`flex-1 py-2 text-sm font-black rounded-xl transition ${activeTab === 'MY_APPS' ? 'bg-zinc-800 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}>My Applications</button>
         </div>
 
-        {/* JOB FEED */}
         <div className="grid gap-4">
+          {/* 🔥 CRICKET THEMED LOADING TEXT */}
           {loading ? (
-            <div className="text-center py-20 text-emerald-500 font-bold animate-pulse">Syncing with cloud marketplace...</div>
+            <div className="text-center py-20 text-emerald-500 font-bold animate-pulse">Scouting local leagues for open roles...</div>
           ) : jobs.filter(j => activeTab === 'JOBS' ? !j.applied : j.applied).length === 0 ? (
             <div className="text-center py-20 bg-zinc-900/30 rounded-3xl border border-zinc-800/50">
               <ShieldCheck size={48} className="mx-auto text-zinc-600 mb-4" />
@@ -149,7 +143,6 @@ export const LeagueOps = () => {
         </div>
       </div>
 
-      {/* POST JOB OVERLAY MODAL */}
       {showPostForm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 w-full max-w-lg shadow-2xl relative animate-in zoom-in duration-200">
@@ -194,7 +187,7 @@ export const LeagueOps = () => {
               </div>
 
               <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-black text-lg py-4 rounded-xl transition active:scale-95 mt-4">
-                {isSubmitting ? "Broadcasting..." : "Publish to Network"}
+                {isSubmitting ? "Publishing to Network..." : "Publish to Network"}
               </button>
             </form>
           </div>
