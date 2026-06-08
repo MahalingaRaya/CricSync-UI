@@ -6,10 +6,8 @@ export const MatchCenter = () => {
   const { liveMatch, timeline, processDelivery, undoLastAction, history, startSecondInnings, battingRoster, bowlingRoster, striker, setStriker, nonStriker, setNonStriker, currentBowler, setCurrentBowler, allPlayers } = useApp();
   const [extraMode, setExtraMode] = useState(null); 
   
-  // UI States
   const [isPublishing, setIsPublishing] = useState(false);
   const [showInstantScorecard, setShowInstantScorecard] = useState(false);
-  // 🔥 NEW: Commentary Language Toggle State
   const [commentaryLang, setCommentaryLang] = useState('EN');
 
   const isOverLimit = liveMatch.balls >= liveMatch.maxOvers * 6;
@@ -19,7 +17,6 @@ export const MatchCenter = () => {
   const isMatchOver = liveMatch.innings === 2 && (isOverLimit || isAllOut || isTargetReached);
   const needsPlayerSelection = !striker || !nonStriker || !currentBowler;
 
-  // 🔥 NEW: Bilingual Generators matching your Spring Boot backend!
   const getBatRunText = (runs) => {
     if (runs === 6) return { en: "SIX! Absolute monster hit!", kn: "ಭರ್ಜರಿ ಸಿಕ್ಸರ್! ಗಗನಚುಂಬಿ ಹೊಡೆತ!" };
     if (runs === 4) return { en: "FOUR! Beautifully timed drive!", kn: "ನಾಲ್ಕು ರನ್! ಭರ್ಜರಿ ಬೌಂಡರಿ!" };
@@ -55,24 +52,56 @@ export const MatchCenter = () => {
     setIsPublishing(false);
   };
 
+  // 🔥 THE FIX: Dynamic 2-Innings Scorecard Render
   if (showInstantScorecard) {
     const teamAStats = allPlayers.filter(p => p.teamName === liveMatch.teamA);
     const teamBStats = allPlayers.filter(p => p.teamName === liveMatch.teamB);
+    
     return (
-      <div className="p-4 max-w-3xl mx-auto space-y-6 text-white font-sans pt-10">
+      <div className="p-4 max-w-3xl mx-auto space-y-6 text-white font-sans pt-10 pb-24">
         <button onClick={() => setShowInstantScorecard(false)} className="text-cyan-400 font-bold flex items-center gap-2 mb-6 hover:text-cyan-300"><ChevronLeft size={20}/> Back to Match Center</button>
         <h2 className="text-3xl font-black mb-4">Instant Scorecard</h2>
-        <div className="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 space-y-4">
-          <h3 className="text-lg font-black text-emerald-400 border-b border-zinc-800 pb-2">{liveMatch.teamA} Batting</h3>
-          {teamAStats.filter(p => p.ballsFaced > 0 || p.runsScored > 0).map(p => (<div key={p.id} className="flex justify-between text-sm"><span className="font-bold">{p.playerName}</span><span className="text-zinc-400">{p.runsScored} ({p.ballsFaced})</span></div>))}
-          <h3 className="text-lg font-black text-cyan-400 border-b border-zinc-800 pb-2 pt-4">{liveMatch.teamB} Bowling</h3>
-          {teamBStats.filter(p => p.oversBowled > 0).map(p => (<div key={p.id} className="flex justify-between text-sm"><span className="font-bold">{p.playerName}</span><span className="text-zinc-400">{p.oversBowled.toFixed(1)} Overs - {p.wicketsTaken} Wkts</span></div>))}
+        
+        {/* INNINGS 1 */}
+        <div className="bg-zinc-900/80 backdrop-blur-xl p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
+          <h3 className="text-lg font-black text-emerald-400 border-b border-zinc-800 pb-2 uppercase tracking-wider">{liveMatch.teamA} Innings</h3>
+          
+          <div className="mb-4">
+            <h4 className="text-[10px] font-black text-zinc-500 mb-2 uppercase tracking-widest">Batting</h4>
+            {teamAStats.filter(p => p.ballsFaced > 0 || p.runsScored > 0).map(p => (<div key={p.id} className="flex justify-between text-sm py-1"><span className="font-bold text-white">{p.playerName}</span><span className="text-zinc-400">{p.runsScored} ({p.ballsFaced})</span></div>))}
+          </div>
+
+          <div>
+            <h4 className="text-[10px] font-black text-zinc-500 mb-2 uppercase tracking-widest">Bowling</h4>
+            {teamBStats.filter(p => p.oversBowled > 0).map(p => (<div key={p.id} className="flex justify-between text-sm py-1"><span className="font-bold text-white">{p.playerName}</span><span className="text-zinc-400">{p.oversBowled.toFixed(1)} Overs - {p.wicketsTaken} W</span></div>))}
+          </div>
         </div>
-        <button onClick={publishAndCopyLink} disabled={isPublishing} className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-black text-lg py-4 rounded-xl flex justify-center items-center gap-2 transition active:scale-95"><Share2 size={20} /> {isPublishing ? "Syncing..." : "Sync to Cloud & Copy Public Link"}</button>
+
+        {/* INNINGS 2 (Only renders if 2nd innings has started) */}
+        {liveMatch.innings === 2 && (
+          <div className="bg-zinc-900/80 backdrop-blur-xl p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
+            <h3 className="text-lg font-black text-cyan-400 border-b border-zinc-800 pb-2 uppercase tracking-wider">{liveMatch.teamB} Innings</h3>
+            
+            <div className="mb-4">
+              <h4 className="text-[10px] font-black text-zinc-500 mb-2 uppercase tracking-widest">Batting</h4>
+              {teamBStats.filter(p => p.ballsFaced > 0 || p.runsScored > 0).map(p => (<div key={p.id} className="flex justify-between text-sm py-1"><span className="font-bold text-white">{p.playerName}</span><span className="text-zinc-400">{p.runsScored} ({p.ballsFaced})</span></div>))}
+            </div>
+
+            <div>
+              <h4 className="text-[10px] font-black text-zinc-500 mb-2 uppercase tracking-widest">Bowling</h4>
+              {teamAStats.filter(p => p.oversBowled > 0).map(p => (<div key={p.id} className="flex justify-between text-sm py-1"><span className="font-bold text-white">{p.playerName}</span><span className="text-zinc-400">{p.oversBowled.toFixed(1)} Overs - {p.wicketsTaken} W</span></div>))}
+            </div>
+          </div>
+        )}
+
+        <button onClick={publishAndCopyLink} disabled={isPublishing} className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-black font-black text-lg py-4 rounded-xl flex justify-center items-center gap-2 transition active:scale-95 shadow-[0_0_15px_rgba(52,211,153,0.3)] mt-4">
+          <Share2 size={20} /> {isPublishing ? "Syncing..." : "Sync to Cloud & Copy Public Link"}
+        </button>
       </div>
     );
   }
 
+  // --- MAIN LIVE SCORING UI BELOW ---
   return (
     <div className="p-4 max-w-7xl mx-auto mb-20 space-y-6 bg-[#050505] min-h-screen text-white font-sans">
       <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-6 max-w-xl mx-auto mb-2 shadow-2xl relative overflow-hidden">
@@ -112,7 +141,7 @@ export const MatchCenter = () => {
             <div className="text-center py-6">
               <h2 className="text-3xl font-black text-white mb-2">Match Finished!</h2>
               <p className="text-emerald-400 font-bold bg-emerald-900/30 border border-emerald-800 py-3 rounded-xl mb-6">{isTargetReached ? `${liveMatch.teamB} wins!` : `${liveMatch.teamA} wins!`}</p>
-              <button onClick={() => setShowInstantScorecard(true)} className="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black text-lg py-4 rounded-xl transition active:scale-95 flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(52,211,153,0.3)]"><Eye size={20} /> View Instant Scorecard</button>
+              <button onClick={() => setShowInstantScorecard(true)} className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-black text-lg py-4 rounded-xl transition active:scale-95 flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(52,211,153,0.3)]"><Eye size={20} /> View Full Scorecard</button>
             </div>
           ) : needsPlayerSelection ? (
             <div className="space-y-4">
@@ -124,7 +153,6 @@ export const MatchCenter = () => {
           ) : extraMode ? (
              <div className="animate-in fade-in zoom-in duration-200">
               <div className="flex items-center gap-3 mb-4"><button onClick={() => setExtraMode(null)} className="p-2 bg-zinc-800 rounded-lg hover:bg-zinc-700"><ChevronLeft size={16} /></button><h3 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">How many physical runs?</h3></div>
-              {/* 🔥 NEW: Added 5 and 6 to the physical runs array */}
               <div className="grid grid-cols-4 gap-2">{[0, 1, 2, 3, 4, 5, 6].map(num => (<button key={num} onClick={() => executeExtra(num)} className="bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg h-14 rounded-xl">{num}</button>))}</div>
             </div>
           ) : (
@@ -132,21 +160,19 @@ export const MatchCenter = () => {
               <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Scorer Keypad</h3>
               <div className="grid grid-cols-4 gap-2">
                 {[0, 1, 2, 3, 4, 6].map(num => (<button key={num} onClick={() => handleBatRun(num)} className="bg-zinc-800 hover:bg-zinc-700 text-white font-black text-lg h-12 rounded-xl">{num}</button>))}
-                <button onClick={handleWicket} className="bg-red-500/20 text-red-400 border border-red-500/40 font-black text-xs h-12 rounded-xl col-span-2">WICKET</button>
-                <button onClick={() => setExtraMode('WD')} className="bg-orange-500/20 text-orange-400 border border-orange-500/40 font-black text-xs h-12 rounded-xl">WD</button>
-                <button onClick={() => setExtraMode('NB')} className="bg-purple-500/20 text-purple-400 border border-purple-500/40 font-black text-xs h-12 rounded-xl">NB</button>
-                <button onClick={() => setExtraMode('B')} className="bg-blue-500/20 text-blue-400 border border-blue-500/40 font-black text-xs h-12 rounded-xl">BYE</button>
-                <button onClick={() => setExtraMode('LB')} className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-black text-xs h-12 rounded-xl">LB</button>
+                <button onClick={handleWicket} className="bg-red-500/20 text-red-400 border border-red-500/40 font-black text-xs h-12 rounded-xl col-span-2 hover:bg-red-500/30">WICKET</button>
+                <button onClick={() => setExtraMode('WD')} className="bg-orange-500/20 text-orange-400 border border-orange-500/40 font-black text-xs h-12 rounded-xl hover:bg-orange-500/30">WD</button>
+                <button onClick={() => setExtraMode('NB')} className="bg-purple-500/20 text-purple-400 border border-purple-500/40 font-black text-xs h-12 rounded-xl hover:bg-purple-500/30">NB</button>
+                <button onClick={() => setExtraMode('B')} className="bg-blue-500/20 text-blue-400 border border-blue-500/40 font-black text-xs h-12 rounded-xl hover:bg-blue-500/30">BYE</button>
+                <button onClick={() => setExtraMode('LB')} className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-black text-xs h-12 rounded-xl hover:bg-cyan-500/30">LB</button>
               </div>
             </div>
           )}
         </div>
 
-        {/* TIMELINE FEED */}
         <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 p-6 rounded-3xl flex flex-col">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Mic size={14} className="text-cyan-400" /> Broadcaster</h3>
-            {/* 🔥 NEW: The EN / KN Language Toggle */}
             <div className="flex gap-1 bg-zinc-950 p-1 rounded-xl text-[10px] font-black border border-zinc-800">
               <button onClick={() => setCommentaryLang("EN")} className={`px-3 py-1 rounded-lg ${commentaryLang === 'EN' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>EN</button>
               <button onClick={() => setCommentaryLang("KN")} className={`px-3 py-1 rounded-lg ${commentaryLang === 'KN' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>ಕನ್ನಡ</button>
@@ -156,7 +182,6 @@ export const MatchCenter = () => {
             {timeline.length === 0 ? <p className="text-zinc-600 text-xs font-medium text-center mt-8">Feed empty.</p> : timeline.map((log) => (
               <div key={log.id} className="flex gap-3 bg-black/50 p-3 rounded-xl border border-zinc-800/50 items-center">
                 <span className="font-black text-zinc-500 text-[10px] shrink-0 bg-zinc-900 px-2 py-1 rounded border border-zinc-800">{log.overDisplay}</span>
-                {/* Dynamically switches between English and Kannada based on the toggle! */}
                 <p className="text-xs flex-1 text-zinc-300">{commentaryLang === 'EN' ? log.commentaryEn : log.commentaryKn}</p>
               </div>
             ))}
