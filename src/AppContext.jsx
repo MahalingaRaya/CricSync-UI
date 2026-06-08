@@ -8,42 +8,30 @@ export const AppProvider = ({ children }) => {
   const [customCommentary, setCustomCommentary] = useState("");
   const [history, setHistory] = useState([]);
   
-  const [liveMatch, setLiveMatch] = useState({
-    id: localStorage.getItem('activeMatchId') || 1, 
-    maxOvers: parseInt(localStorage.getItem('matchMaxOvers')) || 2,
-    innings: 1, target: 0,
-    teamA: "Fetching...", teamB: "Please Wait",
-    runs: 0, wickets: 0, balls: 0, 
-    leagueName: "Local League"
-  });
+  // 🔥 THE FIX: Load INSTANTLY from browser memory instead of waiting for Cloud
+  const loadLocalMatch = () => {
+    const stored = localStorage.getItem('localMatchData');
+    return stored ? JSON.parse(stored) : { id: 1, maxOvers: 2, innings: 1, target: 0, teamA: "Team A", teamB: "Team B", runs: 0, wickets: 0, balls: 0 };
+  };
 
+  const loadLocalPlayers = () => {
+    const stored = localStorage.getItem('localPlayersData');
+    return stored ? JSON.parse(stored) : [];
+  };
+
+  const [liveMatch, setLiveMatch] = useState(loadLocalMatch);
   const [timeline, setTimeline] = useState([]);
+  const [allPlayers, setAllPlayers] = useState(loadLocalPlayers);
   
-  // Master Array holds all stats permanently
-  const [allPlayers, setAllPlayers] = useState([]);
   const [striker, setStriker] = useState(null);
   const [nonStriker, setNonStriker] = useState(null);
   const [currentBowler, setCurrentBowler] = useState(null);
 
+  // Sync to local storage every time match state changes so a refresh doesn't wipe the game
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const activeId = localStorage.getItem('activeMatchId') || 1;
-        const matchRes = await fetch(`${API_BASE_URL}/matches/${activeId}`);
-        if (matchRes.ok) {
-          const matchData = await matchRes.json();
-          setLiveMatch(prev => ({ ...prev, id: matchData.id, maxOvers: matchData.maxOvers || prev.maxOvers, teamA: matchData.teamA, teamB: matchData.teamB, runs: matchData.runsA || prev.runs, wickets: matchData.wicketsA || prev.wickets, balls: matchData.ballsA || prev.balls }));
-        }
-
-        const playerRes = await fetch(`${API_BASE_URL}/match-players/match/${activeId}`);
-        if (playerRes.ok) {
-          const players = await playerRes.json();
-          setAllPlayers(players);
-        }
-      } catch (err) { console.error("Backend sleeping."); }
-    };
-    fetchInitialData();
-  }, []);
+    localStorage.setItem('localMatchData', JSON.stringify(liveMatch));
+    localStorage.setItem('localPlayersData', JSON.stringify(allPlayers));
+  }, [liveMatch, allPlayers]);
 
   const isTeamABatting = liveMatch.innings === 1;
   const battingTeamName = isTeamABatting ? liveMatch.teamA : liveMatch.teamB;
@@ -52,7 +40,6 @@ export const AppProvider = ({ children }) => {
   const battingRoster = allPlayers.filter(p => p.teamName === battingTeamName);
   const bowlingRoster = allPlayers.filter(p => p.teamName === bowlingTeamName);
 
-  // 🔥 THE FIX: eventText now accepts bilingual objects {en, kn}
   const processDelivery = async ({ batterRuns = 0, extraRuns = 0, isLegal = true, physicalRuns = 0, isWicket = false, isByeOrLegBye = false, eventText = { en: "", kn: "" } }) => {
     setHistory(prev => [...prev, { match: liveMatch, striker, nonStriker, currentBowler, allPlayers }]);
 
@@ -101,10 +88,9 @@ export const AppProvider = ({ children }) => {
       p
     ));
 
-    // 🔥 THE FIX: Routing English and Kannada strings to the timeline
     const overStr = `${Math.floor((newBalls - (isLegal ? 1 : 0)) / 6)}.${((newBalls - (isLegal ? 1 : 0)) % 6) + (isLegal ? 1 : 0)}`;
     const actionTextEn = customCommentary || eventText.en;
-    const actionTextKn = customCommentary || eventText.kn || eventText.en; // Fallback to English if Kannada is missing
+    const actionTextKn = customCommentary || eventText.kn || eventText.en;
     
     setTimeline(prev => [{ id: Date.now(), overDisplay: overStr, commentaryEn: actionTextEn, commentaryKn: actionTextKn }, ...prev]);
     
@@ -124,7 +110,7 @@ export const AppProvider = ({ children }) => {
 
   const syncToBackend = (runs, wickets, balls) => {
     const updatePayload = liveMatch.innings === 1 ? { id: liveMatch.id, runsA: runs, wicketsA: wickets, ballsA: balls } : { id: liveMatch.id, runsB: runs, wicketsB: wickets, ballsB: balls };
-    try { fetch(`${API_BASE_URL}/matches/update-live`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatePayload) }); } catch (error) {}
+    fetch(`${API_BASE_URL}/matches/update-live`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatePayload) }).catch(() => {});
   };
 
   const startSecondInnings = () => {
